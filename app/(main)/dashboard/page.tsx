@@ -14,8 +14,9 @@ import { releases, activityFeed, getOrgContext } from "@/lib/dummy-data";
 import { RiskHoverCell } from "@/components/dashboard/RiskHoverCell";
 import { ReleaseDecisionBadge } from "@/components/releases/ReleaseDecisionBadge";
 import { calcReadiness, formatDate, getOrgStats, medianFilesChanged } from "@/lib/utils";
-import { Flag, TrendingUp, AlertTriangle, Clock, Package } from "lucide-react";
+import { Flag, TrendingUp, AlertTriangle, Clock, Package, Sparkles } from "lucide-react";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
+import { QUICK_START_TEMPLATES } from "@/lib/quick-start-templates";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<string | null>(null);
@@ -51,6 +52,46 @@ export default function DashboardPage() {
           positioning={PRODUCT_TAGLINE}
           highlight
         />
+      </div>
+
+      <div className="col-span-12">
+        <AdvancedCard
+          variant="ai"
+          beam
+          icon={Sparkles}
+          title="Quick Start Templates"
+          subtitle={`${QUICK_START_TEMPLATES.length} guided demo scenarios`}
+          action={
+            <ProgressLink href="/templates" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+              Browse all →
+            </ProgressLink>
+          }
+        >
+          <p className="text-sm text-gray-600 mb-3">
+            Jump into at-risk triage, auto-rollback, CAB review, compare views, and more — each template
+            opens the right screen with pre-seeded demo state.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <ProgressLink
+              href="/templates"
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 transition-colors"
+            >
+              <Sparkles className="w-3 h-3" /> All templates
+            </ProgressLink>
+            <ProgressLink
+              href="/releases/rel-v2140"
+              className="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-3 py-1.5 text-xs text-gray-600 hover:bg-brand-50 hover:border-brand-200 transition-colors"
+            >
+              At-risk release
+            </ProgressLink>
+            <ProgressLink
+              href="/compare?left=rel-v2140&right=rel-v2141"
+              className="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-3 py-1.5 text-xs text-gray-600 hover:bg-brand-50 hover:border-brand-200 transition-colors"
+            >
+              Compare releases
+            </ProgressLink>
+          </div>
+        </AdvancedCard>
       </div>
 
       {metrics.map(({ label, value, icon: Icon }, i) => (

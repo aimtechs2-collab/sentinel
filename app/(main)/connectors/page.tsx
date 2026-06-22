@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { TopBar } from "@/components/layout/TopBar";
 import { StatusBadge } from "@/components/badges/StatusBadge";
 import { AdvancedCard } from "@/components/ui/advanced-card";
@@ -32,13 +34,23 @@ const statusDot: Record<string, string> = {
 };
 
 export default function ConnectorsPage() {
+  const searchParams = useSearchParams();
+  const filter = searchParams.get("filter");
+
+  const filteredConnectors = useMemo(() => {
+    if (filter === "issues") {
+      return connectors.filter((c) => c.status === "Error" || c.status === "Disconnected");
+    }
+    return connectors;
+  }, [filter]);
+
   const connected = connectors.filter((c) => c.status === "Connected").length;
   const errors = connectors.filter((c) => c.status === "Error").length;
   const disconnected = connectors.filter((c) => c.status === "Disconnected").length;
 
   const byCategory = CATEGORY_ORDER.map((category) => ({
     category,
-    items: connectors.filter((c) => c.category === category),
+    items: filteredConnectors.filter((c) => c.category === category),
   })).filter((g) => g.items.length > 0);
 
   const metrics = [
@@ -52,7 +64,11 @@ export default function ConnectorsPage() {
     <div>
       <TopBar
         title="Connectors"
-        subtitle={`${connectors.length} integrations across your DevOps toolchain`}
+        subtitle={
+          filter === "issues"
+            ? "Showing integrations with sync errors or disconnected status"
+            : `${connectors.length} integrations across your DevOps toolchain`
+        }
         highlight
       />
 

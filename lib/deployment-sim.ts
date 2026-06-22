@@ -208,12 +208,33 @@ function jitterMetrics(
 }
 
 export function startDeploymentState(release: Release): DeploymentLiveState {
+  return createMidRolloutState(release, 8);
+}
+
+export function createMidRolloutState(release: Release, rolloutPct: number): DeploymentLiveState {
+  const metrics = applyCanarySpike(defaultMetrics(release, rolloutPct), release, rolloutPct);
   return {
     phase: "In Progress",
-    rolloutPct: 8,
+    rolloutPct,
     smokeTests: defaultSmokeTests(release),
-    metrics: defaultMetrics(release, 8),
-    startedAt: new Date().toISOString(),
+    metrics,
+    startedAt: new Date(Date.now() - 180000).toISOString(),
+  };
+}
+
+export function createIncidentDeployState(release: Release): DeploymentLiveState {
+  const rolloutPct = 62;
+  const metrics = applyCanarySpike(defaultMetrics(release, rolloutPct), release, rolloutPct).map((m) =>
+    m.id === "incidents" ? { ...m, value: 1, status: "critical" as const } : m
+  );
+  return {
+    phase: "In Progress",
+    rolloutPct,
+    smokeTests: defaultSmokeTests(release).map((t, i) =>
+      i === 0 ? { ...t, status: "Passed" as const } : t
+    ),
+    metrics,
+    startedAt: new Date(Date.now() - 300000).toISOString(),
   };
 }
 

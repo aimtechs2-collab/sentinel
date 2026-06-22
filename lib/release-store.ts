@@ -7,11 +7,14 @@ import type {
   ReleaseDecisionRecord,
 } from "./types";
 import {
+  createIncidentDeployState,
   createInitialDeploymentState,
+  createMidRolloutState,
   rollbackDeploymentState,
   startDeploymentState,
   tickDeployment,
 } from "./deployment-sim";
+import { releases } from "./dummy-data";
 
 const STORAGE_KEY = "sentinel-release-state";
 
@@ -331,6 +334,67 @@ export function setRollbackNarrative(
       [releaseId]: { ...deploy, rollbackNarrative: narrative },
     },
   };
+}
+
+export type QuickStartSeedId =
+  | "reset"
+  | "go-v2141"
+  | "deploy-mid-v2140"
+  | "deploy-incident-v2140"
+  | "deploy-verified-v2141";
+
+export function clearReleaseStore(): ReleaseStoreState {
+  return emptyStore();
+}
+
+export function applyQuickStartSeed(seedId: QuickStartSeedId): ReleaseStoreState {
+  const base = emptyStore();
+  const rel2140 = releases.find((r) => r.id === "rel-v2140");
+  const rel2141 = releases.find((r) => r.id === "rel-v2141");
+
+  switch (seedId) {
+    case "reset":
+      return base;
+    case "go-v2141":
+      if (!rel2141) return base;
+      return recordDecision(base, rel2141.id, rel2141.version, "Go", {
+        rationale: "All gates green — low-risk mobile patch ready for production.",
+      });
+    case "deploy-mid-v2140":
+      if (!rel2140) return base;
+      return {
+        ...recordDecision(base, rel2140.id, rel2140.version, "Go", {
+          rationale: "Conditional Go — proceed with canary and auto-rollback guardrails.",
+          overridden: true,
+        }),
+        deployments: {
+          "rel-v2140": createMidRolloutState(rel2140, 48),
+        },
+      };
+    case "deploy-incident-v2140":
+      if (!rel2140) return base;
+      return {
+        ...recordDecision(base, rel2140.id, rel2140.version, "Go", {
+          rationale: "Go with heightened monitoring during payments rollout.",
+          overridden: true,
+        }),
+        deployments: {
+          "rel-v2140": createIncidentDeployState(rel2140),
+        },
+      };
+    case "deploy-verified-v2141":
+      if (!rel2141) return base;
+      return {
+        ...recordDecision(base, rel2141.id, rel2141.version, "Go", {
+          rationale: "Standard green-path promotion to production.",
+        }),
+        deployments: {
+          "rel-v2141": createInitialDeploymentState(rel2141, "Verified"),
+        },
+      };
+    default:
+      return base;
+  }
 }
 
 export function initiateRollback(

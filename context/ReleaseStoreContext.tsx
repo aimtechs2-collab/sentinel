@@ -24,6 +24,9 @@ import {
   startDeployment,
   tickDeploymentLive,
   unreadCount,
+  applyQuickStartSeed,
+  clearReleaseStore,
+  type QuickStartSeedId,
   type ReleaseStoreState,
 } from "@/lib/release-store";
 import type { DeploymentLiveState, HistoryEntry, Release, ReleaseDecision } from "@/lib/types";
@@ -47,6 +50,8 @@ interface ReleaseStoreContextValue {
   dismissNotification: (id: string) => void;
   dismissAllNotifications: () => void;
   unreadNotifications: number;
+  applySeed: (seedId: QuickStartSeedId) => void;
+  resetDemoState: () => void;
 }
 
 const ReleaseStoreContext = createContext<ReleaseStoreContextValue | null>(null);
@@ -95,6 +100,8 @@ export function ReleaseStoreProvider({ children }: { children: ReactNode }) {
       dismissNotification: (id) => persist((prev) => markNotificationRead(prev, id)),
       dismissAllNotifications: () => persist((prev) => markAllNotificationsRead(prev)),
       unreadNotifications: unreadCount(state),
+      applySeed: (seedId) => persist(() => applyQuickStartSeed(seedId)),
+      resetDemoState: () => persist(() => clearReleaseStore()),
     }),
     [state, persist]
   );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Snowflake, AlertTriangle, CalendarDays } from "lucide-react";
 import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { TopBar } from "@/components/layout/TopBar";
@@ -11,7 +12,30 @@ import { cn, formatDate, getDayConflicts, isFriday, isInFreezeWindow } from "@/l
 import { taBtnSecondary } from "@/lib/styles";
 
 export default function CalendarPage() {
-  const [viewDate, setViewDate] = useState(() => new Date());
+  const searchParams = useSearchParams();
+  const monthParam = searchParams.get("month");
+
+  const [viewDate, setViewDate] = useState(() => {
+    if (monthParam === "freeze" && freezeWindows[0]) {
+      return new Date(freezeWindows[0].start);
+    }
+    if (monthParam) {
+      const parsed = new Date(`${monthParam}-01T12:00:00`);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+  });
+
+  useEffect(() => {
+    if (monthParam === "freeze" && freezeWindows[0]) {
+      setViewDate(new Date(freezeWindows[0].start));
+      return;
+    }
+    if (monthParam) {
+      const parsed = new Date(`${monthParam}-01T12:00:00`);
+      if (!Number.isNaN(parsed.getTime())) setViewDate(parsed);
+    }
+  }, [monthParam]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();

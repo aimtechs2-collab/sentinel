@@ -5,13 +5,15 @@ import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { useSidebar } from "@/context/SidebarContext";
 import {
   LayoutDashboard, Package, Calendar, History, Plug, Settings,
-  Bot, LineChart, Shield, Briefcase, Share2, Columns2,
+  Bot, LineChart, Shield, Briefcase, Share2, Columns2, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
+import { QUICK_START_TEMPLATES } from "@/lib/quick-start-templates";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/templates", label: "Quick Start", icon: Sparkles, pulse: true },
   { href: "/executive", label: "Executive", icon: Briefcase },
   { href: "/releases", label: "Releases", icon: Package },
   { href: "/compare", label: "Compare", icon: Columns2 },
@@ -86,10 +88,16 @@ export function Sidebar() {
 
       {wide && (
         <div className="border-t border-gray-200 py-4">
-          <div className="rounded-2xl bg-brand-950 px-4 py-4">
-            <p className="text-sm font-semibold text-white">Release Command Center</p>
-            <p className="mt-1 text-xs text-gray-400">{PRODUCT_TAGLINE}</p>
-          </div>
+          <ProgressLink
+            href="/templates"
+            className="block rounded-2xl bg-brand-950 px-4 py-4 transition hover:bg-brand-900"
+          >
+            <p className="text-sm font-semibold text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-brand-300" />
+              Quick Start Templates
+            </p>
+            <p className="mt-1 text-xs text-gray-400">{QUICK_START_TEMPLATES.length} guided demo scenarios</p>
+          </ProgressLink>
         </div>
       )}
     </aside>
