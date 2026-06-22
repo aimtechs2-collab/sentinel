@@ -40,7 +40,7 @@ Flagship demo prototype for stakeholder screen recordings. Static dummy data wit
 | `/knowledge-graph` | Org-wide knowledge graph (releases, services, people, CRs) |
 | `/calendar` | Release calendar |
 | `/history` | Global audit trail |
-| `/connectors` | 8 live connectors |
+| `/connectors` | 32 enterprise integrations (Jira, ServiceNow, Jenkins, Argo CD, etc.) |
 | `/agents` | Agent control room |
 | `/insights` | Org-wide AI risk, trends, and predictive ML |
 | `/settings` | Team/role settings |

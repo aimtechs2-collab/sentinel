@@ -9,18 +9,23 @@ import { AIRiskPanel } from "@/components/releases/AIRiskPanel";
 import { BuildExplainer } from "@/components/releases/BuildExplainer";
 import { ApprovalNudge } from "@/components/releases/ApprovalNudge";
 import { CabPanel } from "@/components/releases/CabPanel";
+import { DeploymentMonitor } from "@/components/releases/DeploymentMonitor";
 import { GoNoGoControls } from "@/components/releases/GoNoGoControls";
+import { ReleaseLifecycleStrip } from "@/components/releases/ReleaseLifecycleStrip";
 import { useReleaseStore } from "@/context/ReleaseStoreContext";
 import { releases } from "@/lib/dummy-data";
+import { computeLifecycleStages } from "@/lib/lifecycle";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { GitBranch, Network } from "lucide-react";
 
 export default function ReleaseDetailPage({ params }: { params: { id: string } }) {
   const release = releases.find((r) => r.id === params.id);
-  const { getReleaseDecision, getReleaseHistory } = useReleaseStore();
+  const { getReleaseDecision, getReleaseHistory, getDeploymentState } = useReleaseStore();
   const stored = release ? getReleaseDecision(release.id) : null;
   const decision = stored?.decision ?? release?.decision ?? null;
   const history = release ? getReleaseHistory(release.id, release.history) : [];
+  const deploy = release ? getDeploymentState(release) : null;
+  const stages = release && deploy ? computeLifecycleStages(release, decision, deploy.phase) : [];
 
   if (!release) {
     return <div className="text-slate-500">Release not found.</div>;
@@ -33,18 +38,25 @@ export default function ReleaseDetailPage({ params }: { params: { id: string } }
       <div className="flex items-center gap-3 mb-6">
         <StatusBadge status={release.status} />
         {decision && <StatusBadge status={decision} />}
+        {deploy && deploy.phase !== "Not Started" && <StatusBadge status={deploy.phase} />}
         <ProgressLink href={`/releases/${release.id}/dependencies`} className="ml-auto flex items-center gap-1.5 text-sm text-primary hover:text-blue-700 font-medium">
           <Network className="w-4 h-4" /> Dependency Map
         </ProgressLink>
       </div>
 
-      <ApprovalNudge release={release} />
+      <ReleaseLifecycleStrip stages={stages} />
+
+      <div className="mt-6">
+        <ApprovalNudge release={release} />
+      </div>
       <div className="mt-6">
         <CabPanel release={release} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div className="lg:col-span-2 space-y-6">
+          <DeploymentMonitor release={release} decision={decision} />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <GoNoGoControls release={release} />
             <BlockerList release={release} />

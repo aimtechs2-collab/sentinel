@@ -190,6 +190,12 @@ const anchorReleases: Release[] = [
     }),
     build: { id: "4471", status: "Passed", pipeline: "GitHub Actions", lastRun: daysAgo(0.5), testCount: 1240, passedTests: 1240 },
     notes: "Database migration needs maintenance window before ship.",
+    deployment: {
+      environment: "production",
+      cluster: "eks-prod-01",
+      pipeline: "Argo CD",
+      targetNamespace: "platform",
+    },
     changeRecord: {
       crNumber: "CR-8842",
       riskTier: "High",
@@ -237,6 +243,12 @@ const anchorReleases: Release[] = [
     }),
     build: { id: "4468", status: "Failed", pipeline: "GitHub Actions", lastRun: daysAgo(0.2), testCount: 320, passedTests: 298 },
     notes: "Build failed on integration tests — investigating.",
+    deployment: {
+      environment: "production",
+      cluster: "eks-prod-02",
+      pipeline: "Harness",
+      targetNamespace: "billing",
+    },
     history: [
       { id: "h5", timestamp: daysAgo(0.2), actor: "Build Agent", action: "Build #4468 failed — 22 test failures in invoice suite", type: "agent", agent: "Build Agent" },
       { id: "h6", timestamp: daysAgo(0.15), actor: "Mike Torres", action: "Rejected QA gate pending build fix", type: "human" },
@@ -273,6 +285,12 @@ const anchorReleases: Release[] = [
     }),
     build: { id: "4465", status: "Running", pipeline: "GitHub Actions", lastRun: daysAgo(0.1), testCount: 890, passedTests: 650 },
     notes: "Large index migration — high file count release.",
+    deployment: {
+      environment: "staging",
+      cluster: "eks-stg-01",
+      pipeline: "Argo CD",
+      targetNamespace: "search",
+    },
     history: [
       { id: "h7", timestamp: daysAgo(4), actor: "Priya Sharma", action: "Created release v2.15.0", type: "human" },
       { id: "h8", timestamp: daysAgo(0.3), actor: "Risk Agent", action: "Flagged 1203 files — 4.3x team median", type: "agent", agent: "Risk Agent" },
@@ -299,6 +317,12 @@ const anchorReleases: Release[] = [
     approvals: defaultApprovals(),
     build: { id: "4472", status: "Passed", pipeline: "GitHub Actions", lastRun: daysAgo(0.3), testCount: 540, passedTests: 540 },
     notes: "Low-risk mobile patch — all gates green.",
+    deployment: {
+      environment: "production",
+      cluster: "eks-prod-01",
+      pipeline: "Harness",
+      targetNamespace: "mobile",
+    },
     history: [{ id: "h9", timestamp: daysAgo(0.5), actor: "Mike Torres", action: "Approved QA gate", type: "human" }],
   },
   {
@@ -454,14 +478,57 @@ export const historicalTrend: HistoricalTrendPoint[] = Array.from({ length: 26 }
 });
 
 export const connectors: Connector[] = [
-  { id: "c1", name: "Jira", description: "Ticket tracker — 1,842 open stories synced", status: "Connected", lastSynced: daysAgo(0.01), maskedToken: "jira_••••••••4f2a" },
-  { id: "c2", name: "GitHub Actions", description: "CI/CD — 12 active pipelines", status: "Connected", lastSynced: daysAgo(0.02), maskedToken: "ghp_••••••••9b1c" },
-  { id: "c3", name: "Datadog", description: "Monitoring — 48 services tracked", status: "Connected", lastSynced: daysAgo(0.05), maskedToken: "dd_••••••••7e3d" },
-  { id: "c4", name: "ServiceNow", description: "Change management — 6 open CRs", status: "Connected", lastSynced: daysAgo(0.1), maskedToken: "sn_••••••••2a8f" },
-  { id: "c5", name: "Snyk", description: "Security — 3 critical vulns flagged", status: "Connected", lastSynced: daysAgo(0.08), maskedToken: "sk-••••••••1c4e" },
-  { id: "c6", name: "Confluence", description: "Documentation — 24 runbooks linked", status: "Connected", lastSynced: daysAgo(0.15), maskedToken: "conf_••••••••6d9b" },
-  { id: "c7", name: "Slack", description: "Notifications — #releases channel", status: "Connected", lastSynced: daysAgo(0.01), maskedToken: "xoxb-••••••••3f7a" },
-  { id: "c8", name: "PagerDuty", description: "Incidents — 2 active Sev-2", status: "Connected", lastSynced: daysAgo(0.03), maskedToken: "pd_••••••••8e2c" },
+  // Issue tracking
+  { id: "c1", name: "Jira", category: "Issue Tracking", description: "Stories & epics — 1,842 items synced across 12 projects", status: "Connected", lastSynced: daysAgo(0.01), maskedToken: "jira_••••••••4f2a" },
+  { id: "c9", name: "Azure DevOps Boards", category: "Issue Tracking", description: "Work items — Billing & Platform teams", status: "Connected", lastSynced: daysAgo(0.04), maskedToken: "ado_••••••••1b8c" },
+  { id: "c10", name: "Linear", category: "Issue Tracking", description: "Mobile squad backlog — 86 open issues", status: "Connected", lastSynced: daysAgo(0.06), maskedToken: "lin_••••••••9d3e" },
+
+  // CI/CD
+  { id: "c2", name: "GitHub Actions", category: "CI/CD", description: "Primary CI — 12 active workflows, 4 org repos", status: "Connected", lastSynced: daysAgo(0.02), maskedToken: "ghp_••••••••9b1c" },
+  { id: "c11", name: "Azure Pipelines", category: "CI/CD", description: "Identity & Core builds — 6 release pipelines", status: "Connected", lastSynced: daysAgo(0.03), maskedToken: "azp_••••••••5f1a" },
+  { id: "c12", name: "Jenkins", category: "CI/CD", description: "Legacy payment jobs — 3 controllers, nightly builds", status: "Connected", lastSynced: daysAgo(0.08), maskedToken: "jen_••••••••2c7d" },
+  { id: "c13", name: "GitLab CI", category: "CI/CD", description: "Data platform pipelines — 8 projects", status: "Connected", lastSynced: daysAgo(0.05), maskedToken: "glpat-••••••••8a4f" },
+  { id: "c14", name: "Harness", category: "CI/CD", description: "Enterprise CD orchestration — prod promotion gates", status: "Connected", lastSynced: daysAgo(0.07), maskedToken: "hns_••••••••3e9b" },
+
+  // Change management
+  { id: "c4", name: "ServiceNow", category: "Change Management", description: "ITSM change records — 6 open CRs, CAB calendar synced", status: "Connected", lastSynced: daysAgo(0.1), maskedToken: "sn_••••••••2a8f" },
+  { id: "c15", name: "BMC Helix ITSM", category: "Change Management", description: "Legacy change queue — read-only bridge for audit", status: "Disconnected", lastSynced: daysAgo(14), maskedToken: "bmc_••••••••6c2a" },
+
+  // Monitoring & observability
+  { id: "c3", name: "Datadog", category: "Monitoring", description: "APM & infra — 48 services, 120+ monitors", status: "Connected", lastSynced: daysAgo(0.05), maskedToken: "dd_••••••••7e3d" },
+  { id: "c16", name: "Splunk", category: "Monitoring", description: "Log aggregation — release correlation searches", status: "Connected", lastSynced: daysAgo(0.09), maskedToken: "spl_••••••••4d8e" },
+  { id: "c17", name: "Grafana Cloud", category: "Monitoring", description: "Dashboards & SLO burn alerts — 34 panels linked", status: "Connected", lastSynced: daysAgo(0.04), maskedToken: "grf_••••••••7b1c" },
+  { id: "c18", name: "Dynatrace", category: "Monitoring", description: "Full-stack APM — payment path synthetic checks", status: "Connected", lastSynced: daysAgo(0.06), maskedToken: "dt_••••••••9f3a" },
+  { id: "c19", name: "New Relic", category: "Monitoring", description: "Mobile BFF transaction tracing", status: "Connected", lastSynced: daysAgo(0.11), maskedToken: "nr_••••••••2e5d" },
+
+  // Incident & on-call
+  { id: "c8", name: "PagerDuty", category: "Incident", description: "On-call schedules — 2 active Sev-2 incidents", status: "Connected", lastSynced: daysAgo(0.03), maskedToken: "pd_••••••••8e2c" },
+  { id: "c20", name: "Opsgenie", category: "Incident", description: "Escalation policies — SRE & Platform rotations", status: "Connected", lastSynced: daysAgo(0.05), maskedToken: "og_••••••••1a7f" },
+  { id: "c21", name: "Statuspage", category: "Incident", description: "Customer comms — scheduled maintenance windows", status: "Connected", lastSynced: daysAgo(0.12), maskedToken: "sp_••••••••5c9b" },
+
+  // Security
+  { id: "c5", name: "Snyk", category: "Security", description: "SCA & container scans — 3 critical vulns open", status: "Connected", lastSynced: daysAgo(0.08), maskedToken: "sk-••••••••1c4e" },
+  { id: "c22", name: "SonarQube", category: "Security", description: "Code quality gates — 2 projects below threshold", status: "Connected", lastSynced: daysAgo(0.07), maskedToken: "son_••••••••8d2e" },
+  { id: "c23", name: "Checkmarx", category: "Security", description: "SAST scans — last sync failed, retry scheduled", status: "Error", lastSynced: daysAgo(0.5), maskedToken: "cx_••••••••3b6a" },
+  { id: "c24", name: "Wiz", category: "Security", description: "Cloud posture — 1 high-severity misconfiguration", status: "Connected", lastSynced: daysAgo(0.1), maskedToken: "wiz_••••••••6e4c" },
+
+  // Documentation
+  { id: "c6", name: "Confluence", category: "Documentation", description: "Runbooks & release notes — 24 pages linked", status: "Connected", lastSynced: daysAgo(0.15), maskedToken: "conf_••••••••6d9b" },
+  { id: "c25", name: "SharePoint", category: "Documentation", description: "CAB packs & steering committee decks", status: "Connected", lastSynced: daysAgo(0.2), maskedToken: "sp_••••••••4f8d" },
+
+  // Communication
+  { id: "c7", name: "Slack", category: "Communication", description: "Alerts — #release-ops, #platform-oncall", status: "Connected", lastSynced: daysAgo(0.01), maskedToken: "xoxb-••••••••3f7a" },
+  { id: "c26", name: "Microsoft Teams", category: "Communication", description: "CAB & exec briefings — 3 channels wired", status: "Connected", lastSynced: daysAgo(0.02), maskedToken: "msteams_••••••••7c1e" },
+
+  // Deployment & platform
+  { id: "c27", name: "Argo CD", category: "Deployment", description: "GitOps — 18 apps across prod & staging clusters", status: "Connected", lastSynced: daysAgo(0.04), maskedToken: "argo_••••••••9a2b" },
+  { id: "c28", name: "Kubernetes (EKS)", category: "Deployment", description: "Target clusters — 4 envs, rollout status synced", status: "Connected", lastSynced: daysAgo(0.03), maskedToken: "k8s_••••••••2d5f" },
+  { id: "c29", name: "Terraform Cloud", category: "Deployment", description: "IaC state — infra drift checks pre-deploy", status: "Connected", lastSynced: daysAgo(0.09), maskedToken: "tf_••••••••8b3c" },
+
+  // Feature flags & secrets
+  { id: "c30", name: "LaunchDarkly", category: "Feature Flags", description: "Progressive rollout flags — 12 tied to releases", status: "Connected", lastSynced: daysAgo(0.06), maskedToken: "ld_••••••••5e7a" },
+  { id: "c31", name: "HashiCorp Vault", category: "Secrets & Config", description: "Secrets rotation — pre-deploy validation hooks", status: "Connected", lastSynced: daysAgo(0.08), maskedToken: "hvt_••••••••1f9d" },
+  { id: "c32", name: "AWS Secrets Manager", category: "Secrets & Config", description: "Cloud secrets — payments & auth namespaces", status: "Connected", lastSynced: daysAgo(0.07), maskedToken: "asm_••••••••4c2b" },
 ];
 
 export const activityFeed: ActivityFeedItem[] = [

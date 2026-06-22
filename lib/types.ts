@@ -91,6 +91,63 @@ export interface FreezeWindow {
   reason: string;
 }
 
+export type DeploymentPhase =
+  | "Not Started"
+  | "Scheduled"
+  | "In Progress"
+  | "Verifying"
+  | "Verified"
+  | "Rolled Back"
+  | "Failed";
+
+export type LifecycleStageId =
+  | "planning"
+  | "scheduling"
+  | "testing"
+  | "preparing"
+  | "managing"
+  | "deployment";
+
+export type StageStatus = "complete" | "active" | "pending" | "blocked";
+
+export interface LifecycleStageView {
+  id: LifecycleStageId;
+  label: string;
+  status: StageStatus;
+  detail: string;
+}
+
+export interface DeploymentSmokeTest {
+  id: string;
+  name: string;
+  status: "Pending" | "Running" | "Passed" | "Failed";
+}
+
+export interface LiveMetricSnapshot {
+  id: string;
+  label: string;
+  value: number;
+  unit: string;
+  threshold: number;
+  status: "healthy" | "warning" | "critical";
+}
+
+export interface ReleaseDeploymentConfig {
+  environment: string;
+  cluster: string;
+  pipeline: string;
+  targetNamespace: string;
+}
+
+export interface DeploymentLiveState {
+  phase: DeploymentPhase;
+  rolloutPct: number;
+  smokeTests: DeploymentSmokeTest[];
+  metrics: LiveMetricSnapshot[];
+  startedAt?: string;
+  completedAt?: string;
+}
+
 export interface ReleaseDecisionRecord {
   decision: ReleaseDecision;
   rationale?: string;
@@ -136,6 +193,7 @@ export interface Release {
   notes: string;
   history: HistoryEntry[];
   changeRecord?: ChangeRecord;
+  deployment?: ReleaseDeploymentConfig;
 }
 
 export interface Service {
@@ -147,9 +205,23 @@ export interface Service {
   unstable?: boolean;
 }
 
+export type ConnectorCategory =
+  | "Issue Tracking"
+  | "CI/CD"
+  | "Change Management"
+  | "Monitoring"
+  | "Incident"
+  | "Security"
+  | "Documentation"
+  | "Communication"
+  | "Deployment"
+  | "Feature Flags"
+  | "Secrets & Config";
+
 export interface Connector {
   id: string;
   name: string;
+  category: ConnectorCategory;
   description: string;
   status: "Connected" | "Disconnected" | "Error";
   lastSynced: string;

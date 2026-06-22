@@ -11,22 +11,27 @@ import {
 } from "react";
 import {
   getDecision,
+  getDeployment,
   getMergedHistory,
+  initiateRollback,
   loadReleaseStore,
   markAllNotificationsRead,
   markNotificationRead,
   recordDecision,
   recordReminderSent,
   saveReleaseStore,
+  startDeployment,
+  tickDeploymentLive,
   unreadCount,
   type ReleaseStoreState,
 } from "@/lib/release-store";
-import type { HistoryEntry, ReleaseDecision } from "@/lib/types";
+import type { DeploymentLiveState, HistoryEntry, Release, ReleaseDecision } from "@/lib/types";
 
 interface ReleaseStoreContextValue {
   state: ReleaseStoreState;
   getReleaseDecision: (releaseId: string) => ReturnType<typeof getDecision>;
   getReleaseHistory: (releaseId: string, base: HistoryEntry[]) => HistoryEntry[];
+  getDeploymentState: (release: Release) => DeploymentLiveState;
   setReleaseDecision: (
     releaseId: string,
     version: string,
@@ -34,6 +39,9 @@ interface ReleaseStoreContextValue {
     opts?: { rationale?: string; overridden?: boolean }
   ) => void;
   sendApprovalReminder: (releaseId: string, version: string, gate: string, channel: string) => void;
+  startDeploy: (release: Release) => void;
+  tickDeploy: (release: Release) => void;
+  rollbackDeploy: (release: Release) => void;
   dismissNotification: (id: string) => void;
   dismissAllNotifications: () => void;
   unreadNotifications: number;
@@ -63,11 +71,21 @@ export function ReleaseStoreProvider({ children }: { children: ReactNode }) {
       state,
       getReleaseDecision: (releaseId) => getDecision(state, releaseId),
       getReleaseHistory: (releaseId, base) => getMergedHistory(state, releaseId, base),
+      getDeploymentState: (release) => getDeployment(state, release.id, release),
       setReleaseDecision: (releaseId, version, decision, opts) => {
         persist((prev) => recordDecision(prev, releaseId, version, decision, opts ?? {}));
       },
       sendApprovalReminder: (releaseId, version, gate, channel) => {
         persist((prev) => recordReminderSent(prev, releaseId, version, gate, channel));
+      },
+      startDeploy: (release) => {
+        persist((prev) => startDeployment(prev, release.id, release, release.version));
+      },
+      tickDeploy: (release) => {
+        persist((prev) => tickDeploymentLive(prev, release.id, release));
+      },
+      rollbackDeploy: (release) => {
+        persist((prev) => initiateRollback(prev, release.id, release, release.version));
       },
       dismissNotification: (id) => persist((prev) => markNotificationRead(prev, id)),
       dismissAllNotifications: () => persist((prev) => markAllNotificationsRead(prev)),

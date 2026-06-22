@@ -1,4 +1,17 @@
-import type { AppNotification, HistoryEntry, ReleaseDecision, ReleaseDecisionRecord } from "./types";
+import type {
+  AppNotification,
+  DeploymentLiveState,
+  HistoryEntry,
+  Release,
+  ReleaseDecision,
+  ReleaseDecisionRecord,
+} from "./types";
+import {
+  createInitialDeploymentState,
+  rollbackDeploymentState,
+  startDeploymentState,
+  tickDeployment,
+} from "./deployment-sim";
 
 const STORAGE_KEY = "sentinel-release-state";
 
@@ -6,6 +19,7 @@ export interface ReleaseStoreState {
   decisions: Record<string, ReleaseDecisionRecord>;
   extraHistory: Record<string, HistoryEntry[]>;
   notifications: AppNotification[];
+  deployments: Record<string, DeploymentLiveState>;
 }
 
 const defaultNotifications: AppNotification[] = [
@@ -39,7 +53,7 @@ const defaultNotifications: AppNotification[] = [
 ];
 
 function emptyStore(): ReleaseStoreState {
-  return { decisions: {}, extraHistory: {}, notifications: [...defaultNotifications] };
+  return { decisions: {}, extraHistory: {}, notifications: [...defaultNotifications], deployments: {} };
 }
 
 export function loadReleaseStore(): ReleaseStoreState {
@@ -52,6 +66,7 @@ export function loadReleaseStore(): ReleaseStoreState {
       decisions: parsed.decisions ?? {},
       extraHistory: parsed.extraHistory ?? {},
       notifications: parsed.notifications?.length ? parsed.notifications : [...defaultNotifications],
+      deployments: parsed.deployments ?? {},
     };
   } catch {
     return emptyStore();
@@ -177,4 +192,131 @@ export function markAllNotificationsRead(state: ReleaseStoreState): ReleaseStore
 
 export function unreadCount(state: ReleaseStoreState): number {
   return state.notifications.filter((n) => !n.read).length;
+}
+
+export function getDeployment(
+  state: ReleaseStoreState,
+  releaseId: string,
+  release: Release
+): DeploymentLiveState {
+  if (state.deployments[releaseId]) return state.deployments[releaseId];
+  if (release.status === "Shipped") {
+    return createInitialDeploymentState(release, "Verified");
+  }
+  return createInitialDeploymentState(release, "Not Started");
+}
+
+function withDeployHistory(
+  state: ReleaseStoreState,
+  releaseId: string,
+  action: string
+): ReleaseStoreState {
+  const entry: HistoryEntry = {
+    id: `dep-${releaseId}-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    actor: "Priya Sharma",
+    action,
+    type: "human",
+  };
+  return {
+    ...state,
+    extraHistory: {
+      ...state.extraHistory,
+      [releaseId]: [...(state.extraHistory[releaseId] ?? []), entry],
+    },
+  };
+}
+
+export function startDeployment(
+  state: ReleaseStoreState,
+  releaseId: string,
+  release: Release,
+  version: string
+): ReleaseStoreState {
+  const deploy = startDeploymentState(release);
+  const notification: AppNotification = {
+    id: `n-dep-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    title: "Deployment started",
+    message: `${version} rolling out to ${release.deployment?.environment ?? "production"}`,
+    releaseId,
+    read: false,
+    type: "decision",
+  };
+  return withDeployHistory(
+    {
+      ...state,
+      deployments: { ...state.deployments, [releaseId]: deploy },
+      notifications: [notification, ...state.notifications],
+    },
+    releaseId,
+    `Started deployment to ${release.deployment?.environment ?? "production"} (${release.deployment?.pipeline ?? "Argo CD"})`
+  );
+}
+
+export function tickDeploymentLive(
+  state: ReleaseStoreState,
+  releaseId: string,
+  release: Release
+): ReleaseStoreState {
+  const current = getDeployment(state, releaseId, release);
+  if (!["In Progress", "Verifying"].includes(current.phase)) return state;
+  const next = tickDeployment(current, release);
+  if (next === current) return state;
+
+  let nextState: ReleaseStoreState = {
+    ...state,
+    deployments: { ...state.deployments, [releaseId]: next },
+  };
+
+  if (current.phase !== next.phase && next.phase === "Verified") {
+    nextState = withDeployHistory(nextState, releaseId, `Deployment verified — smoke tests passed`);
+    nextState = {
+      ...nextState,
+      notifications: [
+        {
+          id: `n-ver-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          title: "Deployment verified",
+          message: `${release.version} live and healthy`,
+          releaseId,
+          read: false,
+          type: "decision",
+        },
+        ...nextState.notifications,
+      ],
+    };
+  }
+
+  return nextState;
+}
+
+export function initiateRollback(
+  state: ReleaseStoreState,
+  releaseId: string,
+  release: Release,
+  version: string
+): ReleaseStoreState {
+  const current = getDeployment(state, releaseId, release);
+  const rolled = rollbackDeploymentState(current, release);
+  return withDeployHistory(
+    {
+      ...state,
+      deployments: { ...state.deployments, [releaseId]: rolled },
+      notifications: [
+        {
+          id: `n-rb-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          title: "Rollback initiated",
+          message: `${version} reverting via blue-green switch`,
+          releaseId,
+          read: false,
+          type: "decision",
+        },
+        ...state.notifications,
+      ],
+    },
+    releaseId,
+    `Rollback initiated for ${version} — ${release.deployment?.pipeline ?? "Argo CD"}`
+  );
 }

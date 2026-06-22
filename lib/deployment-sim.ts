@@ -1,0 +1,179 @@
+import type { DeploymentLiveState, DeploymentPhase, DeploymentSmokeTest, LiveMetricSnapshot, Release } from "./types";
+
+export function defaultSmokeTests(release: Release): DeploymentSmokeTest[] {
+  const names = [
+    "Health check — api-gateway",
+    "Payment path synthetic transaction",
+    "Auth token refresh",
+    "Error rate baseline (< 1%)",
+  ];
+  return names.slice(0, 3 + (release.dependsOnServices.includes("svc-payments") ? 1 : 0)).map((name, i) => ({
+    id: `smoke-${i}`,
+    name,
+    status: "Pending" as const,
+  }));
+}
+
+export function defaultMetrics(release: Release, rolloutPct: number): LiveMetricSnapshot[] {
+  const baseLatency = release.dependsOnServices.includes("svc-payments") ? 210 : 145;
+  const baseError = release.status === "At Risk" ? 0.42 : 0.18;
+
+  return [
+    {
+      id: "rollout",
+      label: "Pod rollout",
+      value: rolloutPct,
+      unit: "%",
+      threshold: 100,
+      status: rolloutPct >= 100 ? "healthy" : rolloutPct >= 50 ? "warning" : "healthy",
+    },
+    {
+      id: "error-rate",
+      label: "Error rate",
+      value: baseError,
+      unit: "%",
+      threshold: 1.0,
+      status: baseError < 0.5 ? "healthy" : baseError < 1 ? "warning" : "critical",
+    },
+    {
+      id: "latency",
+      label: "p99 latency",
+      value: baseLatency,
+      unit: "ms",
+      threshold: 450,
+      status: baseLatency < 300 ? "healthy" : baseLatency < 450 ? "warning" : "critical",
+    },
+    {
+      id: "incidents",
+      label: "Active incidents",
+      value: 0,
+      unit: "",
+      threshold: 0,
+      status: "healthy",
+    },
+  ];
+}
+
+export function createInitialDeploymentState(release: Release, phase: DeploymentPhase = "Not Started"): DeploymentLiveState {
+  const rolloutPct = phase === "Verified" ? 100 : phase === "In Progress" ? 35 : 0;
+  return {
+    phase,
+    rolloutPct,
+    smokeTests: defaultSmokeTests(release),
+    metrics: defaultMetrics(release, rolloutPct),
+    ...(phase === "Verified" ? { completedAt: new Date().toISOString() } : {}),
+  };
+}
+
+export function tickDeployment(state: DeploymentLiveState, release: Release): DeploymentLiveState {
+  if (state.phase === "In Progress") {
+    const nextRollout = Math.min(100, state.rolloutPct + 6 + (release.filesChanged > 400 ? 2 : 4));
+    const metrics = jitterMetrics(defaultMetrics(release, nextRollout), state.metrics, "deploy");
+
+    if (nextRollout >= 100) {
+      const tests = state.smokeTests.map((t, i) => ({
+        ...t,
+        status: i === 0 ? ("Running" as const) : t.status,
+      }));
+      return {
+        ...state,
+        phase: "Verifying",
+        rolloutPct: 100,
+        metrics,
+        smokeTests: tests,
+      };
+    }
+
+    return { ...state, rolloutPct: nextRollout, metrics };
+  }
+
+  if (state.phase === "Verifying") {
+    const runningIdx = state.smokeTests.findIndex((t) => t.status === "Running");
+    if (runningIdx >= 0) {
+      const tests = [...state.smokeTests];
+      tests[runningIdx] = { ...tests[runningIdx], status: "Passed" };
+      if (runningIdx + 1 < tests.length) {
+        tests[runningIdx + 1] = { ...tests[runningIdx + 1], status: "Running" };
+      } else {
+        return {
+          ...state,
+          phase: "Verified",
+          smokeTests: tests,
+          completedAt: new Date().toISOString(),
+          metrics: jitterMetrics(defaultMetrics(release, 100), state.metrics, "stable"),
+        };
+      }
+      return { ...state, smokeTests: tests };
+    }
+  }
+
+  return state;
+}
+
+function jitterMetrics(
+  base: LiveMetricSnapshot[],
+  prev: LiveMetricSnapshot[],
+  mode: "deploy" | "rollback" | "stable"
+): LiveMetricSnapshot[] {
+  const wobble = (Date.now() % 17) / 100;
+  return base.map((m) => {
+    const p = prev.find((x) => x.id === m.id);
+    let value = m.value;
+    if (m.id === "error-rate") {
+      const delta = mode === "rollback" ? 0.35 : mode === "deploy" ? wobble - 0.04 : 0.05;
+      value = Math.max(0, Math.round(((p?.value ?? m.value) + delta) * 100) / 100);
+    } else if (m.id === "latency") {
+      const delta = mode === "rollback" ? 40 : wobble * 20 - 10;
+      value = Math.round((p?.value ?? m.value) + delta);
+    } else if (m.id === "incidents" && mode === "rollback") {
+      value = 1;
+    }
+    const status =
+      m.id === "error-rate"
+        ? value < 0.5
+          ? "healthy"
+          : value < 1
+            ? "warning"
+            : "critical"
+        : m.id === "latency"
+          ? value < 300
+            ? "healthy"
+            : value < 450
+              ? "warning"
+              : "critical"
+          : m.id === "incidents"
+            ? value === 0
+              ? "healthy"
+              : "critical"
+            : m.status;
+    return { ...m, value, status };
+  });
+}
+
+export function startDeploymentState(release: Release): DeploymentLiveState {
+  return {
+    phase: "In Progress",
+    rolloutPct: 8,
+    smokeTests: defaultSmokeTests(release),
+    metrics: defaultMetrics(release, 8),
+    startedAt: new Date().toISOString(),
+  };
+}
+
+export function rollbackDeploymentState(state: DeploymentLiveState, release: Release): DeploymentLiveState {
+  return {
+    ...state,
+    phase: "Rolled Back",
+    rolloutPct: 0,
+    completedAt: new Date().toISOString(),
+    metrics: jitterMetrics(defaultMetrics(release, 0), state.metrics, "rollback"),
+    smokeTests: state.smokeTests.map((t) => ({
+      ...t,
+      status: t.status === "Passed" ? "Passed" : "Failed",
+    })),
+  };
+}
+
+export function getDeploymentPhaseLabel(phase: DeploymentPhase): string {
+  return phase;
+}

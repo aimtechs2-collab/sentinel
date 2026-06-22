@@ -17,8 +17,15 @@ const styles: Record<string, string> = {
   Failed: "bg-error-50 text-error-600",
   Blocked: "bg-error-50 text-error-600",
   "No-Go": "bg-error-50 text-error-600",
-  "N/A": "bg-gray-100 text-gray-600",
+  Error: "bg-error-50 text-error-600",
+  Disconnected: "bg-gray-100 text-gray-600",
   Paused: "bg-gray-100 text-gray-600",
+  Verified: "bg-success-50 text-success-600",
+  Verifying: "bg-warning-50 text-warning-600",
+  "Rolled Back": "bg-error-50 text-error-600",
+  "Not Started": "bg-gray-100 text-gray-600",
+  "In Progress": "bg-brand-50 text-brand-500",
+  "N/A": "bg-gray-100 text-gray-600",
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
