@@ -1,21 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { agents } from "@/lib/dummy-data";
 import { ArchitectureDiagram } from "@/components/agents/ArchitectureDiagram";
 import { AgentActivityMarquee } from "@/components/agents/AgentActivityMarquee";
 import { AgentControlHero } from "@/components/agents/AgentControlHero";
 import { AgentCard } from "@/components/agents/AgentCard";
+import { useReleaseStore } from "@/context/ReleaseStoreContext";
 
 export default function AgentsPage() {
-  const [paused, setPaused] = useState<Record<string, boolean>>({});
-
+  const { isAgentPaused, setAgentPaused } = useReleaseStore();
   const featured = new Set(["ag5", "ag10", "ag7"]);
 
   return (
     <div className="relative overflow-x-hidden">
-      <TopBar title="Agent Control Room" subtitle="Flashy fleet dashboard — 21st.dev-inspired UI" />
+      <TopBar title="Agent Control Room" subtitle="13 AI agents watching releases, connectors, and deployments" />
       <AgentControlHero />
       <AgentActivityMarquee />
       <ArchitectureDiagram />
@@ -25,8 +24,8 @@ export default function AgentsPage() {
           <AgentCard
             key={agent.id}
             agent={agent}
-            isPaused={!!paused[agent.id]}
-            onTogglePause={() => setPaused((p) => ({ ...p, [agent.id]: !p[agent.id] }))}
+            isPaused={isAgentPaused(agent.id)}
+            onTogglePause={() => setAgentPaused(agent.id, !isAgentPaused(agent.id))}
             featured={featured.has(agent.id)}
           />
         ))}

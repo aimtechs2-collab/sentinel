@@ -1,4 +1,4 @@
-import type { Release } from "./types";
+import type { Release, ReleaseDecision } from "./types";
 import { calcReadiness, getBlockers } from "./utils";
 
 export interface ReleaseYesterdaySnapshot {
@@ -89,11 +89,11 @@ export function getYesterdaySnapshot(release: Release): ReleaseYesterdaySnapshot
   };
 }
 
-export function getCurrentSnapshotSummary(release: Release) {
+export function getCurrentSnapshotSummary(release: Release, liveDecision?: ReleaseDecision | null) {
   return {
     readiness: calcReadiness(release),
     blockers: getBlockers(release),
-    decision: release.decision,
+    decision: liveDecision !== undefined ? liveDecision : release.decision,
     status: release.status,
     pendingGates: release.approvals.filter((a) => a.status === "Pending").map((a) => a.gate),
     buildStatus: release.build.status,

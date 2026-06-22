@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import { AgentBadge } from "@/components/badges/AgentBadge";
 import { AICardSkeleton } from "@/components/ui/AISkeleton";
 import { AdvancedCard } from "@/components/ui/advanced-card";
+import { useReleaseStore } from "@/context/ReleaseStoreContext";
 import { callAgent } from "@/lib/agent-client";
 import type { Release, RiskFlag } from "@/lib/types";
 import { medianFilesChanged } from "@/lib/utils";
 import { releases } from "@/lib/dummy-data";
+import { useOrgContext } from "@/lib/use-org-context";
 import { ChevronDown, ChevronUp, ShieldAlert } from "lucide-react";
 
 export function AIRiskPanel({ release }: { release: Release }) {
+  const orgContext = useOrgContext();
+  const { getReleaseDecision, getDeploymentState } = useReleaseStore();
   const [flags, setFlags] = useState<RiskFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,14 +24,21 @@ export function AIRiskPanel({ release }: { release: Release }) {
   useEffect(() => {
     callAgent({
       agentRole: "Risk Agent",
-      context: { release, medianFilesChanged: median, similarReleaseCount: 14 },
+      context: {
+        release,
+        medianFilesChanged: median,
+        similarReleaseCount: 14,
+        recordedDecision: getReleaseDecision(release.id),
+        deployment: getDeploymentState(release),
+        connectorIssues: orgContext.connectorIssues,
+      },
       mode: "structured",
     }).then((res) => {
       if (res.flags) setFlags(res.flags as RiskFlag[]);
       else setError(res.error ?? "Unable to load risk analysis");
       setLoading(false);
     });
-  }, [release, median]);
+  }, [release, median, orgContext.connectorIssues, getReleaseDecision, getDeploymentState]);
 
   return (
     <div className="space-y-3">

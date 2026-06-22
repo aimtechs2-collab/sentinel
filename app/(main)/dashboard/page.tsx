@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { TopBar } from "@/components/layout/TopBar";
 import { AgentBadge } from "@/components/badges/AgentBadge";
@@ -9,38 +9,51 @@ import { AIPanel } from "@/components/ui/ai-panel";
 import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
 import { MetricCard } from "@/components/ui/metric-card";
 import { AdvancedCard } from "@/components/ui/advanced-card";
+import { useReleaseStore } from "@/context/ReleaseStoreContext";
 import { callAgent } from "@/lib/agent-client";
-import { releases, activityFeed, getOrgContext } from "@/lib/dummy-data";
+import { releases } from "@/lib/dummy-data";
+import { getLiveDashboardStats } from "@/lib/dashboard-stats";
+import { useOrgContext } from "@/lib/use-org-context";
+import { useQuickStartLauncher } from "@/lib/use-quick-start-launcher";
 import { RiskHoverCell } from "@/components/dashboard/RiskHoverCell";
 import { ReleaseDecisionBadge } from "@/components/releases/ReleaseDecisionBadge";
-import { calcReadiness, formatDate, getOrgStats, medianFilesChanged } from "@/lib/utils";
-import { Flag, TrendingUp, AlertTriangle, Clock, Package, Sparkles } from "lucide-react";
+import { calcReadiness, formatDate, formatDateTime, medianFilesChanged } from "@/lib/utils";
+import { Flag, TrendingUp, AlertTriangle, Bell, Package, Sparkles, Rocket } from "lucide-react";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
 import { QUICK_START_TEMPLATES } from "@/lib/quick-start-templates";
 
 export default function DashboardPage() {
+  const orgContext = useOrgContext();
+  const { state, getGlobalHistory } = useReleaseStore();
+  const launchTemplate = useQuickStartLauncher();
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [riskCache, setRiskCache] = useState<Record<string, { text?: string; error?: string }>>({});
-  const stats = getOrgStats(releases);
+
+  const stats = useMemo(() => getLiveDashboardStats(releases, state), [state]);
   const median = medianFilesChanged(releases);
+  const recentActivity = useMemo(() => getGlobalHistory().slice(0, 8), [getGlobalHistory]);
 
   useEffect(() => {
-    callAgent({ agentRole: "Summary Agent", context: getOrgContext() }).then((res) => {
+    callAgent({ agentRole: "Summary Agent", context: orgContext }).then((res) => {
       if (res.text) setSummary(res.text);
       else setError(res.error ?? "AI unavailable");
       setLoading(false);
     });
-  }, []);
+  }, [orgContext]);
 
   const activeReleases = releases.filter((r) => r.status !== "Shipped").slice(0, 8);
 
   const metrics = [
     { label: "Releases this week", value: stats.thisWeek, icon: TrendingUp },
-    { label: "Org avg readiness", value: `${stats.avgReadiness}%`, icon: Clock },
-    { label: "Open blockers", value: stats.openBlockers, icon: AlertTriangle },
-    { label: "Approvals pending", value: stats.pendingApprovals, icon: Flag },
+    { label: "Org avg readiness", value: `${stats.avgReadiness}%`, icon: Flag },
+    { label: "Recorded decisions", value: stats.recordedDecisions, icon: AlertTriangle },
+    {
+      label: stats.activeDeploys > 0 ? "Active deploys" : "Unread alerts",
+      value: stats.activeDeploys > 0 ? stats.activeDeploys : stats.unreadAlerts,
+      icon: stats.activeDeploys > 0 ? Rocket : Bell,
+    },
   ];
 
   return (
@@ -78,18 +91,20 @@ export default function DashboardPage() {
             >
               <Sparkles className="w-3 h-3" /> All templates
             </ProgressLink>
-            <ProgressLink
-              href="/releases/rel-v2140"
+            <button
+              type="button"
+              onClick={() => launchTemplate("/releases/rel-v2140", "reset")}
               className="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-3 py-1.5 text-xs text-gray-600 hover:bg-brand-50 hover:border-brand-200 transition-colors"
             >
               At-risk release
-            </ProgressLink>
-            <ProgressLink
-              href="/compare?left=rel-v2140&right=rel-v2141"
+            </button>
+            <button
+              type="button"
+              onClick={() => launchTemplate("/compare?left=rel-v2140&right=rel-v2141", "reset")}
               className="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-3 py-1.5 text-xs text-gray-600 hover:bg-brand-50 hover:border-brand-200 transition-colors"
             >
               Compare releases
-            </ProgressLink>
+            </button>
           </div>
         </AdvancedCard>
       </div>
@@ -149,13 +164,34 @@ export default function DashboardPage() {
       </div>
 
       <div className="col-span-12 xl:col-span-4">
-        <AdvancedCard title="Recent Activity" variant="glass" className="h-full">
+        <AdvancedCard
+          title="Recent Activity"
+          subtitle={
+            stats.activeDeploys > 0
+              ? `${stats.activeDeploys} deploy(s) in progress · live audit events`
+              : "Live audit events from your session"
+          }
+          variant="glass"
+          className="h-full"
+          action={
+            <ProgressLink href="/history" className="text-xs text-brand-500 hover:underline">
+              Full trail →
+            </ProgressLink>
+          }
+        >
           <div className="space-y-3">
-            {activityFeed.slice(0, 6).map((a) => (
-              <div key={a.id} className="border-b border-gray-100 pb-3 text-sm last:border-0">
-                {a.type === "agent" && a.agent && <AgentBadge agent={a.agent} className="mb-1" />}
-                <p className="text-gray-700">{a.message}</p>
-                <p className="mt-1 text-theme-xs text-gray-400">{a.actor} · {formatDate(a.timestamp)}</p>
+            {recentActivity.map((h) => (
+              <div key={h.id} className="border-b border-gray-100 pb-3 text-sm last:border-0">
+                <ProgressLink
+                  href={`/history?release=${h.releaseId}`}
+                  className="block hover:bg-brand-50/50 -mx-2 px-2 py-1 rounded-lg transition-colors"
+                >
+                  {h.type === "agent" && h.agent && <AgentBadge agent={h.agent} className="mb-1" />}
+                  <p className="text-gray-700">{h.action}</p>
+                  <p className="mt-1 text-theme-xs text-gray-400">
+                    {h.actor} · {h.releaseName} · {formatDateTime(h.timestamp)}
+                  </p>
+                </ProgressLink>
               </div>
             ))}
           </div>

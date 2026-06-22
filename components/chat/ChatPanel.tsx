@@ -6,7 +6,7 @@ import { AgentBadge } from "@/components/badges/AgentBadge";
 import { AISkeleton } from "@/components/ui/AISkeleton";
 import { useChat } from "./ChatProvider";
 import { callAgent } from "@/lib/agent-client";
-import { getOrgContext } from "@/lib/dummy-data";
+import { useOrgContext } from "@/lib/use-org-context";
 import { parseCitations } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 
@@ -16,6 +16,7 @@ const SEED: ChatMessage[] = [
 
 export function ChatPanel() {
   const { open, setOpen, toggle } = useChat();
+  const orgContext = useOrgContext();
   const [messages, setMessages] = useState<ChatMessage[]>(SEED);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,7 +33,7 @@ export function ChatPanel() {
       setLoading(true);
       callAgent({
         agentRole: "Conversation Agent",
-        context: getOrgContext(),
+        context: orgContext,
         userMessage: messages[0].content,
         conversationHistory: [],
       }).then((res) => {
@@ -45,7 +46,7 @@ export function ChatPanel() {
         setLoading(false);
       });
     }
-  }, [open, seeded, messages]);
+  }, [open, seeded, messages, orgContext]);
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -56,7 +57,7 @@ export function ChatPanel() {
     setLoading(true);
     const res = await callAgent({
       agentRole: "Conversation Agent",
-      context: getOrgContext(),
+      context: orgContext,
       userMessage: userMsg,
       conversationHistory: newMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
     });

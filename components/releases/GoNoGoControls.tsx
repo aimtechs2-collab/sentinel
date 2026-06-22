@@ -5,16 +5,18 @@ import { AlertTriangle } from "lucide-react";
 import { StatusBadge } from "@/components/badges/StatusBadge";
 import { ReadinessGauge } from "@/components/gauges/ReadinessGauge";
 import { AdvancedCard } from "@/components/ui/advanced-card";
+import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { useReleaseStore } from "@/context/ReleaseStoreContext";
 import type { Release, ReleaseDecision } from "@/lib/types";
-import { calcReadiness, getBlockers } from "@/lib/utils";
+import { getReleaseBlockers } from "@/lib/blockers";
+import { calcReadiness } from "@/lib/utils";
 
 export function GoNoGoControls({ release }: { release: Release }) {
   const { getReleaseDecision, setReleaseDecision } = useReleaseStore();
   const stored = getReleaseDecision(release.id);
   const decision: ReleaseDecision = stored?.decision ?? release.decision;
   const readiness = calcReadiness(release);
-  const blockers = getBlockers(release);
+  const blockers = getReleaseBlockers(release);
   const hasBlockers = blockers.length > 0;
   const lowReadiness = readiness < 70;
 
@@ -95,7 +97,15 @@ export function GoNoGoControls({ release }: { release: Release }) {
             </div>
             <ul className="text-sm text-slate-600 mb-4 space-y-1 list-disc list-inside">
               {blockers.slice(0, 4).map((b) => (
-                <li key={b}>{b}</li>
+                <li key={b.text}>
+                  {b.href ? (
+                    <ProgressLink href={b.href} className="text-brand-600 hover:underline">
+                      {b.text}
+                    </ProgressLink>
+                  ) : (
+                    b.text
+                  )}
+                </li>
               ))}
             </ul>
             <textarea

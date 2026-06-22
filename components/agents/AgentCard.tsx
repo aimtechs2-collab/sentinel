@@ -98,7 +98,7 @@ export function AgentCard({ agent, isPaused, onTogglePause, featured }: AgentCar
           </div>
 
           <div className="relative mt-auto pt-2 border-t border-gray-100">
-            <AgentFindingsPanel agent={agent} />
+            <AgentFindingsPanel agent={agent} isPaused={isPaused} />
           </div>
         </div>
       </MagicCard>

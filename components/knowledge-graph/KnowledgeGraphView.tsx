@@ -23,7 +23,7 @@ const nodeTypes = { kg: KgNode };
 
 const ALL_TYPES: KgNodeType[] = ["person", "release", "service", "ticket", "change", "incident"];
 
-export function KnowledgeGraphView() {
+export function KnowledgeGraphView({ focusReleaseId }: { focusReleaseId?: string | null }) {
   const [filters, setFilters] = useState<Set<KgNodeType>>(() => new Set(ALL_TYPES));
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
@@ -49,7 +49,9 @@ export function KnowledgeGraphView() {
           nodeType: n.type,
           href: n.type === "service" ? undefined : n.href,
           meta: n.meta,
-          selected: n.type === "service" && selectedServiceId === n.id,
+          selected:
+            (n.type === "service" && selectedServiceId === n.id) ||
+            (focusReleaseId != null && n.id === focusReleaseId),
         },
       }));
 
@@ -66,7 +68,7 @@ export function KnowledgeGraphView() {
       }));
 
     return { nodes: ns, edges: es };
-  }, [filters, selectedServiceId]);
+  }, [filters, selectedServiceId, focusReleaseId]);
 
   const onNodeClick: NodeMouseHandler = (_, node) => {
     const nodeType = node.data?.nodeType as KgNodeType | undefined;

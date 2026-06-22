@@ -55,16 +55,30 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
                   <p className="text-xs text-gray-600 mt-0.5">{n.message}</p>
                   <p className="text-xs text-gray-400 mt-1">{formatDateTime(n.timestamp)}</p>
                   {n.releaseId && (
-                    <ProgressLink
-                      href={`/releases/${n.releaseId}`}
-                      onClick={() => {
-                        dismissNotification(n.id);
-                        onClose();
-                      }}
-                      className="text-xs text-brand-500 hover:underline mt-1 inline-block"
-                    >
-                      View release
-                    </ProgressLink>
+                    <div className="flex flex-wrap gap-3 mt-1">
+                      <ProgressLink
+                        href={`/releases/${n.releaseId}`}
+                        onClick={() => {
+                          dismissNotification(n.id);
+                          onClose();
+                        }}
+                        className="text-xs text-brand-500 hover:underline"
+                      >
+                        View release
+                      </ProgressLink>
+                      {(n.type === "decision" || n.type === "build" || n.type === "approval") && (
+                        <ProgressLink
+                          href={`/history?release=${n.releaseId}`}
+                          onClick={() => {
+                            dismissNotification(n.id);
+                            onClose();
+                          }}
+                          className="text-xs text-gray-500 hover:underline"
+                        >
+                          Audit trail
+                        </ProgressLink>
+                      )}
+                    </div>
                   )}
                 </div>
                 {!n.read && (

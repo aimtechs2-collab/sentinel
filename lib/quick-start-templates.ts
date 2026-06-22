@@ -66,7 +66,7 @@ export const QUICK_START_TEMPLATES: QuickStartTemplate[] = [
     icon: CheckCircle2,
     href: "/releases/rel-v2141",
     releaseId: "rel-v2141",
-    seed: "reset",
+    seed: "green-path-v2141",
     duration: "3 min",
     highlights: ["v2.14.1 Mobile", "All gates approved", "Low blast radius"],
     steps: [

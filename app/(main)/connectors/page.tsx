@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/badges/StatusBadge";
 import { AdvancedCard } from "@/components/ui/advanced-card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { connectors } from "@/lib/dummy-data";
+import { connectorSlug } from "@/lib/connectors";
 import type { ConnectorCategory } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { Plug, Link2, Unlink, AlertCircle } from "lucide-react";
@@ -86,7 +87,8 @@ export default function ConnectorsPage() {
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{category}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {items.map((c) => (
-                <AdvancedCard key={c.id} variant="glass" className="h-full">
+                <div key={c.id} id={connectorSlug(c.name)} className="scroll-mt-24 h-full">
+                <AdvancedCard variant="glass" className="h-full">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-gray-800">{c.name}</h3>
                     <div className="flex items-center gap-2">
@@ -102,6 +104,7 @@ export default function ConnectorsPage() {
                     <p>Last synced: {formatDateTime(c.lastSynced)}</p>
                   </div>
                 </AdvancedCard>
+                </div>
               ))}
             </div>
           </section>

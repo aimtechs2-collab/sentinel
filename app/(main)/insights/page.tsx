@@ -8,13 +8,15 @@ import { AdvancedCard } from "@/components/ui/advanced-card";
 import { TrendChart } from "@/components/insights/TrendChart";
 import { PredictiveForecastPanel } from "@/components/predictive/PredictiveForecastPanel";
 import { callAgent } from "@/lib/agent-client";
-import { historicalTrend, getOrgContext, releases, services } from "@/lib/dummy-data";
+import { historicalTrend, releases, services } from "@/lib/dummy-data";
+import { useOrgContext } from "@/lib/use-org-context";
 import { predictAllReleases } from "@/lib/predictive";
 import { taBtnPrimary, taInput } from "@/lib/styles";
 import type { RiskFlag } from "@/lib/types";
 import { MessageSquare, Send, Sparkles } from "lucide-react";
 
 export default function InsightsPage() {
+  const orgContext = useOrgContext();
   const [patterns, setPatterns] = useState<RiskFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,21 +30,21 @@ export default function InsightsPage() {
   useEffect(() => {
     callAgent({
       agentRole: "Risk Agent",
-      context: { historicalTrend, org: getOrgContext() },
+      context: { historicalTrend, org: orgContext },
       mode: "structured",
     }).then((res) => {
       if (res.flags) setPatterns(res.flags as RiskFlag[]);
       else setError(res.error ?? "AI unavailable");
       setLoading(false);
     });
-  }, []);
+  }, [orgContext]);
 
   const ask = async () => {
     if (!question.trim()) return;
     setAsking(true);
     const res = await callAgent({
       agentRole: "Conversation Agent",
-      context: getOrgContext(),
+      context: orgContext,
       userMessage: question,
     });
     setAnswer(res.text ?? res.error ?? "AI unavailable");

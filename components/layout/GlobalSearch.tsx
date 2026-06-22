@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Package, Search, Ticket } from "lucide-react";
-import { searchAll } from "@/lib/dummy-data";
+import { FileText, Package, Search, Sparkles, Ticket } from "lucide-react";
+import { searchAll } from "@/lib/search";
 
 interface GlobalSearchProps {
   open: boolean;
@@ -14,6 +14,7 @@ const icons = {
   release: Package,
   ticket: Ticket,
   change: FileText,
+  template: Sparkles,
 };
 
 export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
@@ -57,7 +58,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search releases, tickets, change records..."
+            placeholder="Search releases, templates, agents, connectors..."
             className="flex-1 text-sm outline-none placeholder:text-slate-400"
           />
           <kbd className="hidden sm:inline text-xs text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">
@@ -67,12 +68,12 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
 
         <div className="max-h-80 overflow-y-auto">
           {query.trim() === "" ? (
-            <p className="p-4 text-sm text-slate-400">Try v2.14.0, CR-8842, PLAT-4422...</p>
+            <p className="p-4 text-sm text-slate-400">Try v2.14.0, auto-rollback, Checkmarx, Risk Agent...</p>
           ) : results.length === 0 ? (
             <p className="p-4 text-sm text-slate-500">No results for &ldquo;{query}&rdquo;</p>
           ) : (
             results.map((r) => {
-              const Icon = icons[r.type];
+              const Icon = r.id.startsWith("tpl-") ? icons.template : icons[r.type];
               return (
                 <button
                   key={r.id}

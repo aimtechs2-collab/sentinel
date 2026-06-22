@@ -24,6 +24,10 @@ import {
   startDeployment,
   tickDeploymentLive,
   unreadCount,
+  setAgentPaused,
+  isAgentPaused,
+  getGlobalHistory,
+  buildLiveOrgContext,
   applyQuickStartSeed,
   clearReleaseStore,
   type QuickStartSeedId,
@@ -52,6 +56,10 @@ interface ReleaseStoreContextValue {
   unreadNotifications: number;
   applySeed: (seedId: QuickStartSeedId) => void;
   resetDemoState: () => void;
+  setAgentPaused: (agentId: string, paused: boolean) => void;
+  isAgentPaused: (agentId: string) => boolean;
+  getGlobalHistory: () => ReturnType<typeof getGlobalHistory>;
+  liveOrgContext: ReturnType<typeof buildLiveOrgContext>;
 }
 
 const ReleaseStoreContext = createContext<ReleaseStoreContextValue | null>(null);
@@ -102,6 +110,10 @@ export function ReleaseStoreProvider({ children }: { children: ReactNode }) {
       unreadNotifications: unreadCount(state),
       applySeed: (seedId) => persist(() => applyQuickStartSeed(seedId)),
       resetDemoState: () => persist(() => clearReleaseStore()),
+      setAgentPaused: (agentId, paused) => persist((prev) => setAgentPaused(prev, agentId, paused)),
+      isAgentPaused: (agentId) => isAgentPaused(state, agentId),
+      getGlobalHistory: () => getGlobalHistory(state),
+      liveOrgContext: buildLiveOrgContext(state),
     }),
     [state, persist]
   );

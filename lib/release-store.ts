@@ -14,7 +14,8 @@ import {
   startDeploymentState,
   tickDeployment,
 } from "./deployment-sim";
-import { releases } from "./dummy-data";
+import { getAllHistory, getOrgContext, releases } from "./dummy-data";
+import { getConnectorIssues } from "./connectors";
 
 const STORAGE_KEY = "sentinel-release-state";
 
@@ -23,6 +24,7 @@ export interface ReleaseStoreState {
   extraHistory: Record<string, HistoryEntry[]>;
   notifications: AppNotification[];
   deployments: Record<string, DeploymentLiveState>;
+  pausedAgents: Record<string, boolean>;
 }
 
 const defaultNotifications: AppNotification[] = [
@@ -56,7 +58,13 @@ const defaultNotifications: AppNotification[] = [
 ];
 
 function emptyStore(): ReleaseStoreState {
-  return { decisions: {}, extraHistory: {}, notifications: [...defaultNotifications], deployments: {} };
+  return {
+    decisions: {},
+    extraHistory: {},
+    notifications: [...defaultNotifications],
+    deployments: {},
+    pausedAgents: {},
+  };
 }
 
 export function loadReleaseStore(): ReleaseStoreState {
@@ -70,6 +78,7 @@ export function loadReleaseStore(): ReleaseStoreState {
       extraHistory: parsed.extraHistory ?? {},
       notifications: parsed.notifications?.length ? parsed.notifications : [...defaultNotifications],
       deployments: parsed.deployments ?? {},
+      pausedAgents: parsed.pausedAgents ?? {},
     };
   } catch {
     return emptyStore();
@@ -83,6 +92,80 @@ export function saveReleaseStore(state: ReleaseStoreState) {
 
 export function getDecision(state: ReleaseStoreState, releaseId: string): ReleaseDecisionRecord | null {
   return state.decisions[releaseId] ?? null;
+}
+
+export function getGlobalHistory(state: ReleaseStoreState) {
+  const base = getAllHistory();
+  const live = Object.entries(state.extraHistory).flatMap(([releaseId, entries]) => {
+    const release = releases.find((r) => r.id === releaseId);
+    return entries.map((h) => ({
+      ...h,
+      releaseName: release?.version ?? releaseId,
+      releaseId,
+    }));
+  });
+  const seen = new Set<string>();
+  return [...live, ...base]
+    .filter((h) => {
+      if (seen.has(h.id)) return false;
+      seen.add(h.id);
+      return true;
+    })
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
+export function buildLiveOrgContext(state: ReleaseStoreState) {
+  const base = getOrgContext();
+  const connectorIssues = getConnectorIssues().map((c) => ({
+    name: c.name,
+    status: c.status,
+    category: c.category,
+  }));
+
+  return {
+    ...base,
+    releases: base.releases.map((r) => {
+      const decision = state.decisions[r.id];
+      const deploy = state.deployments[r.id];
+      return {
+        ...r,
+        recordedDecision: decision?.decision ?? null,
+        decisionRationale: decision?.rationale ?? null,
+        deploymentPhase: deploy?.phase ?? null,
+        rolloutPct: deploy?.rolloutPct ?? null,
+      };
+    }),
+    liveDecisions: Object.entries(state.decisions).map(([releaseId, d]) => ({
+      releaseId,
+      ...d,
+    })),
+    liveDeployments: Object.entries(state.deployments).map(([releaseId, d]) => ({
+      releaseId,
+      phase: d.phase,
+      rolloutPct: d.rolloutPct,
+      autoRollback: d.autoRollback ?? false,
+    })),
+    connectorIssues,
+    unreadNotifications: state.notifications.filter((n) => !n.read).slice(0, 8),
+    pausedAgents: Object.entries(state.pausedAgents)
+      .filter(([, paused]) => paused)
+      .map(([id]) => id),
+  };
+}
+
+export function setAgentPaused(
+  state: ReleaseStoreState,
+  agentId: string,
+  paused: boolean
+): ReleaseStoreState {
+  return {
+    ...state,
+    pausedAgents: { ...state.pausedAgents, [agentId]: paused },
+  };
+}
+
+export function isAgentPaused(state: ReleaseStoreState, agentId: string): boolean {
+  return !!state.pausedAgents[agentId];
 }
 
 export function getMergedHistory(
@@ -165,7 +248,7 @@ export function recordReminderSent(
     title: "Reminder sent",
     message: `${gate} reminder queued to ${channel} for ${version}`,
     releaseId,
-    read: true,
+    read: false,
     type: "comms",
   };
 
@@ -339,6 +422,7 @@ export function setRollbackNarrative(
 export type QuickStartSeedId =
   | "reset"
   | "go-v2141"
+  | "green-path-v2141"
   | "deploy-mid-v2140"
   | "deploy-incident-v2140"
   | "deploy-verified-v2141";
@@ -360,6 +444,16 @@ export function applyQuickStartSeed(seedId: QuickStartSeedId): ReleaseStoreState
       return recordDecision(base, rel2141.id, rel2141.version, "Go", {
         rationale: "All gates green — low-risk mobile patch ready for production.",
       });
+    case "green-path-v2141":
+      if (!rel2141) return base;
+      return {
+        ...recordDecision(base, rel2141.id, rel2141.version, "Go", {
+          rationale: "All gates green — low-risk mobile patch ready for production.",
+        }),
+        deployments: {
+          "rel-v2141": createInitialDeploymentState(rel2141, "Verified"),
+        },
+      };
     case "deploy-mid-v2140":
       if (!rel2140) return base;
       return {

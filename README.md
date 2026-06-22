@@ -2,7 +2,7 @@
 
 Built by release managers for release management.
 
-Flagship demo prototype for stakeholder screen recordings. Static dummy data with real LLM-powered agent responses.
+Flagship demo prototype for stakeholder screen recordings. Static dummy data with real LLM-powered agent responses. **Live demo state** (Go decisions, deployments, notifications) persists in `localStorage` via the release store.
 
 ## Setup
 
@@ -34,18 +34,27 @@ Flagship demo prototype for stakeholder screen recordings. Static dummy data wit
 | Route | Description |
 |---|---|
 | `/login` | Fake login → dashboard |
-| `/dashboard` | Executive overview + AI daily summary |
+| `/dashboard` | Executive overview + AI daily summary + live activity feed |
+| `/templates` | Quick Start — 22 guided demo scenarios with seeded state |
 | `/executive` | C-level portfolio dashboard, risk heatmap, ML forecasts |
 | `/releases` | Full release list |
 | `/releases/[id]` | Release command center (core screen) |
 | `/releases/[id]/dependencies` | React Flow dependency map |
+| `/compare` | Side-by-side release comparison |
 | `/knowledge-graph` | Org-wide knowledge graph (releases, services, people, CRs) |
-| `/calendar` | Release calendar |
-| `/history` | Global audit trail |
-| `/connectors` | 59 enterprise integrations (DevOps, ITSM, security, observability) |
-| `/agents` | Agent control room — 13 AI agents, Magic UI-style fleet dashboard |
+| `/calendar` | Release calendar + freeze windows |
+| `/history` | Global audit trail (static + your live decisions/deployments) |
+| `/connectors` | 59 enterprise integrations — errors link to release blockers |
+| `/agents` | Agent control room — 13 AI agents with pause/resume |
 | `/insights` | Org-wide AI risk, trends, and predictive ML |
 | `/settings` | Team/role settings |
+
+## Demo flow
+
+1. Open **Quick Start** (`/templates`) and launch a scenario (e.g. auto-rollback, healthy green-path).
+2. Record a **Go** decision on a release — it appears in **History**, **Notifications**, and **AI chat** context.
+3. Use the bell icon for unread alerts; click **Audit trail** on a notification to jump to filtered history.
+4. **Reset demo state** from the Templates page to clear `localStorage` and start fresh.
 
 ## Demo anchors
 

@@ -6,16 +6,19 @@ import { AgentBadge } from "@/components/badges/AgentBadge";
 import { StatusBadge } from "@/components/badges/StatusBadge";
 import { AICardSkeleton } from "@/components/ui/AISkeleton";
 import { AdvancedCard } from "@/components/ui/advanced-card";
+import { useReleaseStore } from "@/context/ReleaseStoreContext";
 import { callAgent } from "@/lib/agent-client";
 import { getCurrentSnapshotSummary, getYesterdaySnapshot } from "@/lib/release-snapshot";
 import type { Release } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 
 export function YesterdayDiffPanel({ release }: { release: Release }) {
+  const { getReleaseDecision } = useReleaseStore();
+  const storedDecision = getReleaseDecision(release.id)?.decision ?? null;
   const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const yesterday = getYesterdaySnapshot(release);
-  const current = getCurrentSnapshotSummary(release);
+  const current = getCurrentSnapshotSummary(release, storedDecision);
 
   const ask = async () => {
     setLoading(true);
@@ -27,6 +30,7 @@ export function YesterdayDiffPanel({ release }: { release: Release }) {
         release: { id: release.id, version: release.version, team: release.team },
         yesterday,
         current,
+        recordedDecision: storedDecision,
       },
       userMessage: `What changed on ${release.version} in the last 24 hours? Compare yesterday vs now.`,
     });
@@ -62,6 +66,9 @@ export function YesterdayDiffPanel({ release }: { release: Release }) {
           <p className="text-[10px] uppercase text-gray-400 mb-2">Now</p>
           <p className="font-bold text-gray-800">{current.readiness}% ready</p>
           <p className="text-xs text-gray-500 mt-1">{current.blockers.length} blocker(s)</p>
+          {storedDecision && (
+            <p className="text-xs text-brand-600 mt-1">Recorded decision: {storedDecision}</p>
+          )}
           <StatusBadge status={current.buildStatus} className="mt-2" />
         </div>
       </div>

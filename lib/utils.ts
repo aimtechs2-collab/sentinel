@@ -1,4 +1,5 @@
 import type { Approval, Release } from "./types";
+import { getConnectorBlockers } from "./connectors";
 
 export function calcReadiness(release: Release): number {
   const approvalWeight = 40;
@@ -34,6 +35,7 @@ export function getBlockers(release: Release): string[] {
     .forEach((t) => blockers.push(`Ticket ${t.id} still ${t.status.toLowerCase()}`));
   if (release.build.status === "Failed") blockers.push("Latest build failed");
   if (release.build.status === "Running") blockers.push("Build still running");
+  getConnectorBlockers(release).forEach((b) => blockers.push(b.text));
   return blockers;
 }
 

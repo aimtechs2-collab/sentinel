@@ -14,6 +14,7 @@ import { EnvironmentPromotionStrip } from "@/components/releases/EnvironmentProm
 import { GoNoGoControls } from "@/components/releases/GoNoGoControls";
 import { ReleaseLifecycleStrip } from "@/components/releases/ReleaseLifecycleStrip";
 import { ReleaseScorecardButton } from "@/components/releases/ReleaseScorecard";
+import { ReleaseRelatedLinks } from "@/components/releases/ReleaseRelatedLinks";
 import { YesterdayDiffPanel } from "@/components/releases/YesterdayDiffPanel";
 import { AdvancedCard } from "@/components/ui/advanced-card";
 import { useReleaseStore } from "@/context/ReleaseStoreContext";
@@ -58,6 +59,8 @@ export default function ReleaseDetailPage({ params }: { params: { id: string } }
       </div>
 
       <ReleaseLifecycleStrip stages={stages} />
+
+      <ReleaseRelatedLinks releaseId={release.id} />
 
       <div className="mt-6">
         <EnvironmentPromotionStrip release={release} deployPhase={deploy?.phase} />

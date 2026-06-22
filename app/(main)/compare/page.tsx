@@ -10,9 +10,12 @@ import {
   COMPARE_PRESETS,
 } from "@/lib/release-comparison";
 import { predictAllReleases } from "@/lib/predictive";
+import { useReleaseStore } from "@/context/ReleaseStoreContext";
+
 import { Columns2 } from "lucide-react";
 
 export default function ComparePage() {
+  const { getReleaseDecision } = useReleaseStore();
   const searchParams = useSearchParams();
   const leftParam = searchParams.get("left");
   const rightParam = searchParams.get("right");
@@ -36,8 +39,12 @@ export default function ComparePage() {
   const leftRelease = releases.find((r) => r.id === leftId);
   const rightRelease = releases.find((r) => r.id === rightId);
 
-  const leftSnap = leftRelease ? buildCompareSnapshot(leftRelease, predMap.get(leftId)) : null;
-  const rightSnap = rightRelease ? buildCompareSnapshot(rightRelease, predMap.get(rightId)) : null;
+  const leftSnap = leftRelease
+    ? buildCompareSnapshot(leftRelease, predMap.get(leftId), getReleaseDecision(leftId)?.decision ?? null)
+    : null;
+  const rightSnap = rightRelease
+    ? buildCompareSnapshot(rightRelease, predMap.get(rightId), getReleaseDecision(rightId)?.decision ?? null)
+    : null;
 
   const activeReleases = releases.filter((r) => r.status !== "Shipped");
 

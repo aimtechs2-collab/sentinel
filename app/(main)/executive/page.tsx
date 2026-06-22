@@ -9,6 +9,7 @@ import { ReleasesAtRiskTable } from "@/components/executive/ReleasesAtRiskTable"
 import { PredictiveForecastPanel } from "@/components/predictive/PredictiveForecastPanel";
 import { callAgent } from "@/lib/agent-client";
 import { getExecutiveContext, releases, services } from "@/lib/dummy-data";
+import { useReleaseStore } from "@/context/ReleaseStoreContext";
 import {
   getPortfolioStats,
   getTeamRiskHeatmap,
@@ -17,6 +18,7 @@ import {
 import { Briefcase, TrendingDown, TrendingUp, AlertTriangle, Calendar, Brain } from "lucide-react";
 
 export default function ExecutivePage() {
+  const { liveOrgContext } = useReleaseStore();
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,12 +30,12 @@ export default function ExecutivePage() {
   useEffect(() => {
     callAgent({
       agentRole: "Summary Agent",
-      context: getExecutiveContext(predictions, portfolio),
+      context: { ...getExecutiveContext(predictions, portfolio), org: liveOrgContext },
     }).then((res) => {
       setSummary(res.text ?? null);
       setLoading(false);
     });
-  }, [predictions, portfolio]);
+  }, [predictions, portfolio, liveOrgContext]);
 
   const metrics = [
     { label: "Active releases", value: portfolio.activeCount, icon: Briefcase },

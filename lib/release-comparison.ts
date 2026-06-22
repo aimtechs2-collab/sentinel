@@ -1,4 +1,4 @@
-import type { Release, ReleasePrediction } from "./types";
+import type { Release, ReleaseDecision, ReleasePrediction } from "./types";
 import { calcReadiness, getBlockers } from "./utils";
 
 export interface ReleaseCompareSnapshot {
@@ -21,16 +21,18 @@ export interface ReleaseCompareSnapshot {
 
 export function buildCompareSnapshot(
   release: Release,
-  prediction?: ReleasePrediction
+  prediction?: ReleasePrediction,
+  liveDecision?: ReleaseDecision | null
 ): ReleaseCompareSnapshot {
   const approved = release.approvals.filter((a) => a.status === "Approved").length;
+  const decision = liveDecision !== undefined ? liveDecision : release.decision;
   return {
     releaseId: release.id,
     version: release.version,
     name: release.name,
     team: release.team,
     status: release.status,
-    decision: release.decision,
+    decision,
     readiness: calcReadiness(release),
     blockers: getBlockers(release),
     pendingApprovals: release.approvals.filter((a) => a.status === "Pending").length,
