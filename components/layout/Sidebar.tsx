@@ -3,28 +3,11 @@
 import { usePathname } from "next/navigation";
 import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { useSidebar } from "@/context/SidebarContext";
-import {
-  LayoutDashboard, Package, Calendar, History, Plug, Settings,
-  Bot, LineChart, Shield, Briefcase, Share2, Columns2, Sparkles,
-} from "lucide-react";
+import { Shield, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
 import { QUICK_START_TEMPLATES } from "@/lib/quick-start-templates";
-
-const nav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/templates", label: "Quick Start", icon: Sparkles, pulse: true },
-  { href: "/executive", label: "Executive", icon: Briefcase },
-  { href: "/releases", label: "Releases", icon: Package },
-  { href: "/compare", label: "Compare", icon: Columns2 },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/insights", label: "Insights", icon: LineChart },
-  { href: "/knowledge-graph", label: "Knowledge Graph", icon: Share2 },
-  { href: "/agents", label: "Agents", icon: Bot, pulse: true },
-  { href: "/history", label: "History Log", icon: History },
-  { href: "/connectors", label: "Connectors", icon: Plug },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { NAV_SECTIONS } from "@/lib/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -56,34 +39,46 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto no-scrollbar">
-        <p className={cn("mb-3 text-xs font-semibold uppercase text-gray-400", !wide && "lg:hidden")}>
-          Menu
-        </p>
-        <ul className="flex flex-col gap-1">
-          {nav.map(({ href, label, icon: Icon, pulse }) => {
-            const active = pathname === href || pathname.startsWith(href + "/");
-            return (
-              <li key={href}>
-                <ProgressLink
-                  href={href}
-                  className={cn(
-                    "menu-item group",
-                    active ? "menu-item-active" : "menu-item-inactive",
-                    !wide && "lg:justify-center"
-                  )}
-                >
-                  <span className={active ? "menu-item-icon-active" : "menu-item-icon-inactive"}>
-                    <Icon className="h-5 w-5 shrink-0" />
-                  </span>
-                  {wide && <span className="flex-1">{label}</span>}
-                  {wide && pulse && (
-                    <span className="h-2 w-2 rounded-full bg-ai animate-pulseDot" />
-                  )}
-                </ProgressLink>
-              </li>
-            );
-          })}
-        </ul>
+        {NAV_SECTIONS.map((section, sectionIndex) => (
+          <div key={section.title ?? `section-${sectionIndex}`} className={sectionIndex > 0 ? "mt-5" : ""}>
+            {section.title && (
+              <p className={cn("mb-3 text-xs font-semibold uppercase text-gray-400", !wide && "lg:hidden")}>
+                {section.title}
+              </p>
+            )}
+            {!section.title && sectionIndex === 0 && (
+              <p className={cn("mb-3 text-xs font-semibold uppercase text-gray-400", !wide && "lg:hidden")}>
+                Menu
+              </p>
+            )}
+            <ul className="flex flex-col gap-1">
+              {section.items.map(({ href, label, icon: Icon, pulse }) => {
+                const active = pathname === href || pathname.startsWith(href + "/");
+                return (
+                  <li key={href}>
+                    <ProgressLink
+                      href={href}
+                      title={!wide ? label : undefined}
+                      className={cn(
+                        "menu-item group",
+                        active ? "menu-item-active" : "menu-item-inactive",
+                        !wide && "lg:justify-center"
+                      )}
+                    >
+                      <span className={active ? "menu-item-icon-active" : "menu-item-icon-inactive"}>
+                        <Icon className="h-5 w-5 shrink-0" />
+                      </span>
+                      {wide && <span className="flex-1">{label}</span>}
+                      {wide && pulse && (
+                        <span className="h-2 w-2 rounded-full bg-ai animate-pulseDot" />
+                      )}
+                    </ProgressLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
 
       {wide && (
@@ -94,7 +89,7 @@ export function Sidebar() {
           >
             <p className="text-sm font-semibold text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-brand-300" />
-              Quick Start Templates
+              Templates
             </p>
             <p className="mt-1 text-xs text-gray-400">{QUICK_START_TEMPLATES.length} guided demo scenarios</p>
           </ProgressLink>
