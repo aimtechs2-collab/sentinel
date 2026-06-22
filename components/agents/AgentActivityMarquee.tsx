@@ -1,23 +1,26 @@
 "use client";
 
 import { activityFeed } from "@/lib/dummy-data";
-import { Marquee } from "@/components/ui/marquee";
 import { AgentBadge } from "@/components/badges/AgentBadge";
 import type { AgentRole } from "@/lib/types";
 
 export function AgentActivityMarquee() {
-  const items = activityFeed.filter((a) => a.type === "agent" && a.agent).slice(0, 12);
+  const items = activityFeed.filter((a) => a.type === "agent" && a.agent).slice(0, 8);
 
   return (
-    <div className="relative mb-6 overflow-hidden rounded-2xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-white to-brand-50/80 py-3">
-      <Marquee pauseOnHover className="[--gap:2rem]">
+    <div className="relative mb-6 rounded-2xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-white to-brand-50/80 px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Recent agent activity</p>
+      <div className="flex flex-wrap gap-2">
         {items.map((item) => (
-          <div key={item.id} className="flex items-center gap-2 shrink-0 px-2">
+          <div
+            key={item.id}
+            className="flex items-center gap-2 shrink-0 rounded-full border border-violet-100/80 bg-white/80 px-3 py-1.5 shadow-theme-sm max-w-full"
+          >
             {item.agent && <AgentBadge agent={item.agent as AgentRole} className="shrink-0" />}
-            <span className="text-xs text-gray-600 whitespace-nowrap max-w-[280px] truncate">{item.message}</span>
+            <span className="text-xs text-gray-600 truncate max-w-[240px]">{item.message}</span>
           </div>
         ))}
-      </Marquee>
+      </div>
     </div>
   );
 }

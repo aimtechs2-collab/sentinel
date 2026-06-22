@@ -14,7 +14,7 @@ export default function AgentsPage() {
   const featured = new Set(["ag5", "ag10", "ag7"]);
 
   return (
-    <div className="relative">
+    <div className="relative overflow-x-hidden">
       <TopBar title="Agent Control Room" subtitle="Flashy fleet dashboard — 21st.dev-inspired UI" />
       <AgentControlHero />
       <AgentActivityMarquee />
