@@ -1,27 +1,36 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Settings2 } from "lucide-react";
 import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
 import type { ApplicationConfig } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 
-export function AppConfigTable({ configs }: { configs: ApplicationConfig[] }) {
-  const [selected, setSelected] = useState(configs[0]?.application ?? "SAP");
+export function AppConfigTable({
+  configs,
+  selectedApp,
+  onSelectApp,
+}: {
+  configs: ApplicationConfig[];
+  selectedApp?: string | null;
+  onSelectApp?: (app: string) => void;
+}) {
+  const apps = useMemo(() => configs.map((c) => c.application), [configs]);
+  const selected = selectedApp && apps.includes(selectedApp) ? selectedApp : apps[0] ?? "SAP";
   const config = useMemo(() => configs.find((c) => c.application === selected), [configs, selected]);
 
   return (
     <DataTable
       title="Application Config"
-      subtitle="URLs and feature flags per application"
+      subtitle="URLs and feature flags synthesized from release build state"
       icon={Settings2}
       action={
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {configs.map((c) => (
             <button
               key={c.application}
               type="button"
-              onClick={() => setSelected(c.application)}
+              onClick={() => onSelectApp?.(c.application)}
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
                 selected === c.application ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -65,7 +74,7 @@ export function AppConfigTable({ configs }: { configs: ApplicationConfig[] }) {
                           flag.enabled ? "bg-success-100 text-success-700" : "bg-gray-100 text-gray-500"
                         )}
                       >
-                        {flag.enabled ? "Enabled" : "Disabled"}
+                        {flag.enabled ? "On" : "Off"}
                       </span>
                     </td>
                   </tr>

@@ -1,5 +1,8 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
+import { motion } from "framer-motion";
+import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { AlertOctagon } from "lucide-react";
 import { AdvancedCard } from "@/components/ui/advanced-card";
 import type { EnterpriseReleaseImpact } from "@/lib/types";
@@ -14,29 +17,47 @@ const conditionIcons: Record<string, string> = {
 };
 
 export function EnterpriseReleaseImpactPanel({ impacts }: { impacts: EnterpriseReleaseImpact[] }) {
+  const activeCount = impacts.filter((i) => i.active).length;
+
   return (
     <AdvancedCard
       title="Enterprise Release Impact"
-      subtitle="Release prerequisites, dependencies, and operational impact conditions"
+      subtitle={`Derived from change records and release risk · ${activeCount} active window${activeCount === 1 ? "" : "s"}`}
       icon={AlertOctagon}
       variant="ai"
     >
       <div className="space-y-4">
-        {impacts.map((impact) => (
-          <div
+        {impacts.map((impact, i) => (
+          <motion.div
             key={impact.releaseId}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06 }}
             className={cn(
               "rounded-xl border p-4 transition-all",
-              impact.active ? "border-brand-300 bg-brand-50/50 ring-1 ring-brand-200" : "border-gray-100 bg-white/60"
+              impact.active
+                ? "border-brand-300 bg-brand-50/50 ring-2 ring-brand-200/80 shadow-theme-sm"
+                : "border-gray-100 bg-white/60 hover:border-gray-200"
             )}
           >
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <h4 className="font-semibold text-gray-800">{impact.releaseName}</h4>
-              {impact.active && (
-                <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                  Active window
-                </span>
-              )}
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <div>
+                <h4 className="font-semibold text-gray-800">{impact.releaseName}</h4>
+                {impact.version && <p className="text-xs text-gray-500 tabular-nums">{impact.version}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                {impact.active && (
+                  <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white animate-pulse">
+                    Active window
+                  </span>
+                )}
+                <ProgressLink
+                  href={`/releases/${impact.releaseId}`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                >
+                  Release <ExternalLink className="h-3 w-3" />
+                </ProgressLink>
+              </div>
             </div>
 
             <div className="mb-3">
@@ -69,7 +90,7 @@ export function EnterpriseReleaseImpactPanel({ impacts }: { impacts: EnterpriseR
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </AdvancedCard>

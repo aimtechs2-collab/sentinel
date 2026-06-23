@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarRange } from "lucide-react";
+import { motion } from "framer-motion";
+import { CalendarRange, ExternalLink } from "lucide-react";
+import { ProgressLink } from "@/components/layout/NavigationProgress";
+import { StatusBadge } from "@/components/badges/StatusBadge";
 import { AdvancedCard } from "@/components/ui/advanced-card";
 import type { EnterpriseDepartment, ReleaseImpact, ReleaseSize, ReleaseTimelineEntry } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
@@ -17,12 +20,20 @@ const sizeColors: Record<ReleaseSize, string> = {
 };
 
 const impactStyles: Record<ReleaseImpact, string> = {
-  high: "border-error-300 bg-error-50/80",
-  medium: "border-warning-300 bg-warning-50/80",
-  low: "border-success-300 bg-success-50/80",
+  high: "border-error-300 bg-gradient-to-r from-error-50/90 to-error-100/50",
+  medium: "border-warning-300 bg-gradient-to-r from-warning-50/90 to-warning-100/50",
+  low: "border-success-300 bg-gradient-to-r from-success-50/90 to-success-100/50",
 };
 
-export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }) {
+export function ReleaseTimeline({
+  entries,
+  selectedId,
+  onSelect,
+}: {
+  entries: ReleaseTimelineEntry[];
+  selectedId?: string | null;
+  onSelect?: (entry: ReleaseTimelineEntry | null) => void;
+}) {
   const [deptFilter, setDeptFilter] = useState<EnterpriseDepartment | "all">("all");
   const [sizeFilter, setSizeFilter] = useState<ReleaseSize | "all">("all");
   const [impactFilter, setImpactFilter] = useState<ReleaseImpact | "all">("all");
@@ -40,6 +51,10 @@ export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }
 
   const { minDate, rangeMs } = useMemo(() => {
     const dates = filtered.flatMap((e) => [new Date(e.startDate), new Date(e.endDate)]);
+    if (dates.length === 0) {
+      const now = new Date();
+      return { minDate: now, rangeMs: 86400000 * 30 };
+    }
     const min = new Date(Math.min(...dates.map((d) => d.getTime())));
     const max = new Date(Math.max(...dates.map((d) => d.getTime())));
     min.setDate(min.getDate() - 3);
@@ -49,11 +64,11 @@ export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }
 
   const ticks = useMemo(() => {
     const count = 8;
-    return Array.from({ length: count + 1 }, (_, i) => {
-      const t = minDate.getTime() + (rangeMs * i) / count;
-      return new Date(t);
-    });
+    return Array.from({ length: count + 1 }, (_, i) => new Date(minDate.getTime() + (rangeMs * i) / count));
   }, [minDate, rangeMs]);
+
+  const todayPct = ((Date.now() - minDate.getTime()) / rangeMs) * 100;
+  const showToday = todayPct >= 0 && todayPct <= 100;
 
   const pos = (date: string) => {
     const pct = ((new Date(date).getTime() - minDate.getTime()) / rangeMs) * 100;
@@ -63,7 +78,7 @@ export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }
   return (
     <AdvancedCard
       title="Release Timeline"
-      subtitle="Portfolio release calendar — filter by department, size, and impact"
+      subtitle="Synthetic portfolio calendar — derived from live release train data"
       icon={CalendarRange}
       variant="glass"
     >
@@ -73,8 +88,18 @@ export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }
         <FilterPills label="Impact" value={impactFilter} options={["all", ...IMPACTS]} onChange={setImpactFilter} />
       </div>
 
-      <div className="relative pt-2 pb-8">
+      <div className="relative pt-2 pb-10">
         <div className="absolute left-0 right-0 top-[52px] h-0.5 bg-gray-200 rounded-full" />
+        {showToday && (
+          <div
+            className="absolute top-[44px] bottom-4 w-0.5 bg-brand-400 z-10"
+            style={{ left: `${todayPct}%` }}
+          >
+            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-wide text-brand-500 whitespace-nowrap">
+              Today
+            </span>
+          </div>
+        )}
         <div className="flex justify-between text-[10px] text-gray-400 mb-1 px-0.5">
           {ticks.map((t, i) => (
             <span key={i} className="tabular-nums">
@@ -83,27 +108,40 @@ export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }
           ))}
         </div>
 
-        <div className="space-y-2 min-h-[120px]">
-          {filtered.map((entry, row) => (
-            <div key={entry.id} className="relative h-9">
-              <div
-                className={cn(
-                  "absolute top-1 h-7 rounded-lg border flex items-center px-2 gap-2 text-xs font-medium shadow-sm transition-all hover:shadow-md cursor-default",
-                  impactStyles[entry.impact]
-                )}
-                style={{
-                  left: `${pos(entry.startDate)}%`,
-                  width: `${Math.max(4, pos(entry.endDate) - pos(entry.startDate))}%`,
-                  marginTop: row % 2 === 1 ? 4 : 0,
-                }}
-                title={`${entry.name} · ${formatDate(entry.startDate)} → ${formatDate(entry.endDate)}`}
-              >
-                <span className={cn("h-2 w-2 rounded-full shrink-0", sizeColors[entry.size])} />
-                <span className="truncate">{entry.name}</span>
-                <span className="text-[10px] opacity-60 shrink-0">{entry.department}</span>
+        <div className="space-y-2 min-h-[140px]">
+          {filtered.map((entry, row) => {
+            const selected = selectedId === entry.id;
+            return (
+              <div key={entry.id} className="relative h-10">
+                <motion.button
+                  type="button"
+                  layout
+                  initial={{ opacity: 0, scaleX: 0.6 }}
+                  animate={{ opacity: 1, scaleX: 1 }}
+                  transition={{ delay: row * 0.04, duration: 0.35 }}
+                  onClick={() => onSelect?.(selected ? null : entry)}
+                  className={cn(
+                    "absolute top-1 h-8 rounded-lg border flex items-center px-2 gap-1.5 text-xs font-medium shadow-sm transition-all hover:shadow-md hover:scale-[1.02] text-left overflow-hidden",
+                    impactStyles[entry.impact],
+                    selected && "ring-2 ring-brand-400 shadow-theme-md z-20"
+                  )}
+                  style={{
+                    left: `${pos(entry.startDate)}%`,
+                    width: `${Math.max(6, pos(entry.endDate) - pos(entry.startDate))}%`,
+                    marginTop: row % 2 === 1 ? 4 : 0,
+                  }}
+                  title={`${entry.name} · ${formatDate(entry.startDate)} → ${formatDate(entry.endDate)}`}
+                >
+                  <span className={cn("h-2 w-2 rounded-full shrink-0", sizeColors[entry.size])} />
+                  <span className="truncate font-semibold">{entry.name}</span>
+                  {entry.version && (
+                    <span className="text-[10px] opacity-70 shrink-0 tabular-nums">{entry.version}</span>
+                  )}
+                  <span className="text-[10px] opacity-50 shrink-0 ml-auto">{entry.department}</span>
+                </motion.button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {filtered.length === 0 && (
@@ -111,7 +149,35 @@ export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }
         )}
       </div>
 
-      <div className="flex flex-wrap gap-4 text-[10px] text-gray-500 border-t border-gray-100 pt-3">
+      {selectedId && (() => {
+        const entry = entries.find((e) => e.id === selectedId);
+        if (!entry) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="border-t border-gray-100 pt-4 mt-2 flex flex-wrap items-center gap-3"
+          >
+            <div>
+              <p className="font-semibold text-gray-800">{entry.name}</p>
+              <p className="text-xs text-gray-500">
+                {entry.owner} · {formatDate(entry.startDate)} → {formatDate(entry.endDate)}
+              </p>
+            </div>
+            <StatusBadge status={entry.status} />
+            {entry.releaseId && (
+              <ProgressLink
+                href={`/releases/${entry.releaseId}`}
+                className="inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600 transition-colors ml-auto"
+              >
+                Open release <ExternalLink className="h-3 w-3" />
+              </ProgressLink>
+            )}
+          </motion.div>
+        );
+      })()}
+
+      <div className="flex flex-wrap gap-4 text-[10px] text-gray-500 border-t border-gray-100 pt-3 mt-2">
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-error-500" /> High size
         </span>
@@ -121,6 +187,7 @@ export function ReleaseTimeline({ entries }: { entries: ReleaseTimelineEntry[] }
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-success-500" /> Low size
         </span>
+        <span className="text-gray-400">Click a bar to inspect and jump to release detail</span>
       </div>
     </AdvancedCard>
   );
@@ -147,7 +214,7 @@ function FilterPills<T extends string>({
           onClick={() => onChange(opt)}
           className={cn(
             "rounded-lg px-2 py-0.5 text-xs capitalize transition-colors",
-            value === opt ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            value === opt ? "bg-brand-500 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           )}
         >
           {opt}

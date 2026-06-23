@@ -1,29 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Server } from "lucide-react";
 import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
 import type { ApplicationEnvConfig } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 
-export function AppEnvConfigTable({ configs }: { configs: ApplicationEnvConfig[] }) {
+export function AppEnvConfigTable({
+  configs,
+  selectedApp,
+  onSelectApp,
+}: {
+  configs: ApplicationEnvConfig[];
+  selectedApp?: string | null;
+  onSelectApp?: (app: string) => void;
+}) {
   const apps = useMemo(() => Array.from(new Set(configs.map((c) => c.application))), [configs]);
-  const [app, setApp] = useState(apps[0] ?? "SAP");
+  const app = selectedApp && apps.includes(selectedApp) ? selectedApp : apps[0] ?? "SAP";
 
   const rows = useMemo(() => configs.filter((c) => c.application === app), [configs, app]);
 
   return (
     <DataTable
       title="Application Env Config"
-      subtitle="Infrastructure, firewall, and network zone per environment"
+      subtitle="Cluster, pipeline, and namespace from release deployment configs"
       icon={Server}
       action={
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {apps.map((a) => (
             <button
               key={a}
               type="button"
-              onClick={() => setApp(a)}
+              onClick={() => onSelectApp?.(a)}
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
                 app === a ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -53,7 +61,7 @@ export function AppEnvConfigTable({ configs }: { configs: ApplicationEnvConfig[]
                   {row.environment}
                 </span>
               </td>
-              <td className={cn(tableCell, "text-gray-600 max-w-[200px]")}>{row.infra}</td>
+              <td className={cn(tableCell, "text-gray-600 max-w-[200px] font-mono text-xs")}>{row.infra}</td>
               <td className={cn(tableCell, "text-gray-600 max-w-[180px]")}>{row.firewall}</td>
               <td className={cn(tableCell, "text-gray-600")}>{row.networkZone}</td>
               <td className={cn(tableCell, "text-gray-400 text-xs tabular-nums whitespace-nowrap")}>

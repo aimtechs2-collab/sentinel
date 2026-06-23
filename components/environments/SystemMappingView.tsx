@@ -1,45 +1,82 @@
 "use client";
 
 import { useMemo } from "react";
-import ReactFlow, { Background, Controls, MarkerType, type Edge, type Node } from "reactflow";
+import ReactFlow, { Background, Controls, MarkerType, type Edge, type Node, type NodeMouseHandler } from "reactflow";
 import "reactflow/dist/style.css";
 import { GitBranch } from "lucide-react";
 import { AdvancedCard } from "@/components/ui/advanced-card";
 import type { EnterpriseSystemNode } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
-const nodeStyles = {
-  environment: "bg-brand-50 border-brand-300 text-brand-800",
-  application: "bg-violet-50 border-violet-300 text-violet-800",
+const statusRing: Record<string, string> = {
+  healthy: "ring-success-300",
+  warning: "ring-warning-400 animate-pulse",
+  critical: "ring-error-500 animate-pulse",
 };
 
-function SystemMapNode({ data }: { data: { label: string; nodeType: "environment" | "application" } }) {
+function SystemMapNode({
+  data,
+}: {
+  data: {
+    label: string;
+    nodeType: "environment" | "application";
+    status?: string;
+    version?: string;
+    selected?: boolean;
+  };
+}) {
   return (
     <div
-      className={`rounded-xl border-2 px-4 py-2.5 text-sm font-semibold shadow-sm min-w-[120px] text-center ${nodeStyles[data.nodeType]}`}
+      className={cn(
+        "rounded-xl border-2 px-4 py-2.5 text-sm font-semibold shadow-sm min-w-[130px] text-center transition-all ring-2 ring-offset-1",
+        data.nodeType === "environment"
+          ? "bg-brand-50 border-brand-300 text-brand-800"
+          : "bg-violet-50 border-violet-300 text-violet-800",
+        data.status && statusRing[data.status],
+        data.selected && "scale-105 shadow-theme-md border-brand-500"
+      )}
     >
-      {data.label}
+      <div>{data.label}</div>
+      {data.version && <div className="text-[10px] font-normal opacity-70 mt-0.5 tabular-nums">{data.version}</div>}
+      {data.status && data.status !== "healthy" && (
+        <div className="text-[9px] uppercase tracking-wide mt-1 opacity-80">{data.status}</div>
+      )}
     </div>
   );
 }
 
 const nodeTypes = { systemMap: SystemMapNode };
 
-export function SystemMappingView({ nodes: systemNodes }: { nodes: EnterpriseSystemNode[] }) {
+export function SystemMappingView({
+  nodes: systemNodes,
+  selectedNodeId,
+  onSelectNode,
+}: {
+  nodes: EnterpriseSystemNode[];
+  selectedNodeId?: string | null;
+  onSelectNode?: (node: EnterpriseSystemNode | null) => void;
+}) {
   const { nodes, edges } = useMemo(() => {
     const positions: Record<string, { x: number; y: number }> = {
-      "test-sap": { x: 200, y: 20 },
-      "uat-asset": { x: 80, y: 140 },
-      "dev-oracle": { x: 320, y: 140 },
-      "prod-sap": { x: 200, y: 260 },
-      "prod-oracle": { x: 320, y: 360 },
-      "app-fin": { x: 20, y: 260 },
-      "app-crm": { x: 480, y: 260 },
+      "env-test-sap": { x: 200, y: 20 },
+      "env-uat-asset": { x: 60, y: 140 },
+      "env-dev-oracle": { x: 340, y: 140 },
+      "env-prod-sap": { x: 200, y: 260 },
+      "app-fin": { x: 20, y: 380 },
+      "app-crm": { x: 340, y: 380 },
+      "app-mobile": { x: 200, y: 380 },
     };
 
     const ns: Node[] = systemNodes.map((n) => ({
       id: n.id,
       type: "systemMap",
-      data: { label: n.label, nodeType: n.type },
+      data: {
+        label: n.label,
+        nodeType: n.type,
+        status: n.status,
+        version: n.version,
+        selected: selectedNodeId === n.id,
+      },
       position: positions[n.id] ?? { x: 0, y: 0 },
     }));
 
@@ -50,33 +87,58 @@ export function SystemMappingView({ nodes: systemNodes }: { nodes: EnterpriseSys
         source: n.parentId!,
         target: n.id,
         markerEnd: { type: MarkerType.ArrowClosed, color: "#64748B" },
-        style: { stroke: "#94A3B8", strokeWidth: 2 },
-        animated: n.type === "environment",
+        style: {
+          stroke: n.status === "critical" ? "#EF4444" : n.status === "warning" ? "#F59E0B" : "#94A3B8",
+          strokeWidth: 2,
+        },
+        animated: n.type === "environment" || n.status !== "healthy",
       }));
 
     return { nodes: ns, edges: es };
-  }, [systemNodes]);
+  }, [systemNodes, selectedNodeId]);
+
+  const onNodeClick: NodeMouseHandler = (_, node) => {
+    const match = systemNodes.find((n) => n.id === node.id);
+    if (match) onSelectNode?.(selectedNodeId === match.id ? null : match);
+  };
+
+  const selected = systemNodes.find((n) => n.id === selectedNodeId);
 
   return (
     <AdvancedCard
       title="System Mapping"
-      subtitle="Enterprise environment topology — TEST SAP, UAT, DEV Oracle, and downstream apps"
+      subtitle="Service dependency topology mapped to enterprise environments"
       icon={GitBranch}
       variant="glass"
       noPadding
     >
       <div className="h-[420px] border-t border-gray-100">
-        <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.3 }}>
+        <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.35 }} onNodeClick={onNodeClick}>
           <Background gap={16} color="#E2E8F0" />
           <Controls className="!rounded-xl" />
         </ReactFlow>
       </div>
+      {selected && (
+        <div className="px-5 py-3 border-t border-gray-100 bg-brand-50/30 text-xs text-gray-600 flex flex-wrap gap-3">
+          <span>
+            <strong className="text-gray-800">{selected.label}</strong>
+            {selected.criticality && ` · ${selected.criticality} criticality`}
+          </span>
+          {selected.serviceId && (
+            <span className="font-mono text-[10px] bg-white/80 px-2 py-0.5 rounded border">{selected.serviceId}</span>
+          )}
+          {selected.version && <span className="tabular-nums">Release target {selected.version}</span>}
+        </div>
+      )}
       <div className="flex gap-4 px-5 py-3 text-[10px] text-gray-500 border-t border-gray-100">
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-6 rounded border-2 border-brand-300 bg-brand-50" /> Environment
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-6 rounded border-2 border-violet-300 bg-violet-50" /> Application
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-error-500 animate-pulse" /> Unstable / incident
         </span>
       </div>
     </AdvancedCard>

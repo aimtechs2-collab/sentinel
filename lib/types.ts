@@ -369,16 +369,22 @@ export interface ReleaseTimelineEntry {
   startDate: string;
   endDate: string;
   status: ReleaseStatus;
+  releaseId?: string;
+  version?: string;
+  owner?: string;
 }
 
 export interface EnvBooking {
   id: string;
   system: string;
   month: string;
+  monthIndex: number;
   status: EnvBookingStatus;
   team?: string;
   purpose?: string;
   contact?: string;
+  releaseId?: string;
+  version?: string;
 }
 
 export interface EnterpriseSystemNode {
@@ -386,6 +392,10 @@ export interface EnterpriseSystemNode {
   label: string;
   type: "environment" | "application";
   parentId?: string;
+  serviceId?: string;
+  status?: "healthy" | "warning" | "critical";
+  version?: string;
+  criticality?: string;
 }
 
 export interface ApplicationVersionRow {
@@ -393,6 +403,11 @@ export interface ApplicationVersionRow {
   dev: string;
   test: string;
   prod: string;
+  serviceIds: string[];
+  drift: boolean;
+  releaseId?: string;
+  team?: string;
+  promotionPct: number;
 }
 
 export interface ApplicationEnvConfig {
@@ -422,7 +437,28 @@ export type EnterpriseImpactCondition =
 export interface EnterpriseReleaseImpact {
   releaseId: string;
   releaseName: string;
+  version?: string;
   prerequisites: string[];
   conditions: EnterpriseImpactCondition[];
   active: boolean;
+}
+
+export interface EnvironmentDeskStats {
+  timelineCount: number;
+  bookedEnvs: number;
+  versionDrift: number;
+  activeImpacts: number;
+  mappedServices: number;
+  promotionGap: number;
+}
+
+export interface EnvironmentDeskSnapshot {
+  timeline: ReleaseTimelineEntry[];
+  bookings: EnvBooking[];
+  systemNodes: EnterpriseSystemNode[];
+  versions: ApplicationVersionRow[];
+  envConfigs: ApplicationEnvConfig[];
+  appConfigs: ApplicationConfig[];
+  impacts: EnterpriseReleaseImpact[];
+  stats: EnvironmentDeskStats;
 }

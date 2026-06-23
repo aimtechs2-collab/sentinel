@@ -1,21 +1,35 @@
 "use client";
 
-import { Layers } from "lucide-react";
+import { motion } from "framer-motion";
+import { AlertTriangle, ExternalLink, Layers } from "lucide-react";
+import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
 import type { ApplicationVersionRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function versionClass(current: string, prod: string) {
-  if (current === prod) return "text-success-700 bg-success-50";
-  return "text-brand-700 bg-brand-50";
-}
+export function VersionMatrix({
+  rows,
+  selectedApp,
+  onSelectApp,
+}: {
+  rows: ApplicationVersionRow[];
+  selectedApp?: string | null;
+  onSelectApp?: (app: string | null) => void;
+}) {
+  const driftCount = rows.filter((r) => r.drift).length;
 
-export function VersionMatrix({ rows }: { rows: ApplicationVersionRow[] }) {
   return (
     <DataTable
       title="Current Version"
-      subtitle="Application versions deployed across DEV, TEST, and PROD"
+      subtitle={`Promotion matrix across DEV → TEST → PROD · ${driftCount} app${driftCount === 1 ? "" : "s"} with drift`}
       icon={Layers}
+      action={
+        driftCount > 0 ? (
+          <span className="inline-flex items-center gap-1 rounded-lg bg-warning-50 px-2.5 py-1 text-xs font-medium text-warning-700 border border-warning-200">
+            <AlertTriangle className="h-3.5 w-3.5" /> Promotion gap detected
+          </span>
+        ) : undefined
+      }
     >
       <table className="w-full text-sm">
         <thead>
@@ -24,12 +38,28 @@ export function VersionMatrix({ rows }: { rows: ApplicationVersionRow[] }) {
             <th className={cn(tableCell, "text-left font-medium")}>DEV</th>
             <th className={cn(tableCell, "text-left font-medium")}>TEST</th>
             <th className={cn(tableCell, "text-left font-medium")}>PROD</th>
+            <th className={cn(tableCell, "text-left font-medium")}>Promotion</th>
+            <th className={cn(tableCell, "text-left font-medium")} />
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.application} className={tableRow}>
-              <td className={cn(tableCell, "font-semibold text-gray-800")}>{row.application}</td>
+          {rows.map((row, i) => (
+            <motion.tr
+              key={row.application}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.04 }}
+              className={cn(
+                tableRow,
+                "cursor-pointer",
+                selectedApp === row.application && "bg-brand-50/60"
+              )}
+              onClick={() => onSelectApp?.(selectedApp === row.application ? null : row.application)}
+            >
+              <td className={cn(tableCell, "font-semibold text-gray-800")}>
+                <div>{row.application}</div>
+                {row.team && <div className="text-[10px] font-normal text-gray-400">{row.team} team</div>}
+              </td>
               <td className={tableCell}>
                 <VersionBadge version={row.dev} ahead={row.dev !== row.prod} />
               </td>
@@ -39,7 +69,21 @@ export function VersionMatrix({ rows }: { rows: ApplicationVersionRow[] }) {
               <td className={tableCell}>
                 <VersionBadge version={row.prod} prod />
               </td>
-            </tr>
+              <td className={tableCell}>
+                <PromotionBar pct={row.promotionPct} drift={row.drift} />
+              </td>
+              <td className={tableCell}>
+                {row.releaseId && (
+                  <ProgressLink
+                    href={`/releases/${row.releaseId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
+                  >
+                    View <ExternalLink className="h-3 w-3" />
+                  </ProgressLink>
+                )}
+              </td>
+            </motion.tr>
           ))}
         </tbody>
       </table>
@@ -52,11 +96,27 @@ function VersionBadge({ version, ahead, prod }: { version: string; ahead?: boole
     <span
       className={cn(
         "inline-flex rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums",
-        prod ? "bg-gray-100 text-gray-700" : versionClass(version, prod ? version : "")
+        prod ? "bg-gray-100 text-gray-700" : ahead ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200" : "bg-success-50 text-success-700"
       )}
     >
       {version}
       {ahead && !prod && <span className="ml-1 text-[10px] font-normal opacity-60">↑</span>}
     </span>
+  );
+}
+
+function PromotionBar({ pct, drift }: { pct: number; drift: boolean }) {
+  return (
+    <div className="flex items-center gap-2 min-w-[100px]">
+      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className={cn("h-full rounded-full", drift ? "bg-gradient-to-r from-brand-400 to-warning-400" : "bg-success-500")}
+        />
+      </div>
+      <span className="text-[10px] tabular-nums text-gray-500 w-8">{pct}%</span>
+    </div>
   );
 }

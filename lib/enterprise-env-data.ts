@@ -1,263 +1,461 @@
+import { buildEnvironmentPromotions } from "./environment-promotions";
+import { connectors, freezeWindows, releases, services } from "./dummy-data";
 import type {
   ApplicationConfig,
   ApplicationEnvConfig,
   ApplicationVersionRow,
+  EnterpriseDepartment,
+  EnterpriseEnvStage,
+  EnterpriseImpactCondition,
   EnterpriseReleaseImpact,
   EnterpriseSystemNode,
   EnvBooking,
+  EnvironmentDeskSnapshot,
+  EnvironmentDeskStats,
+  Release,
+  ReleaseImpact,
+  ReleaseSize,
   ReleaseTimelineEntry,
+  Service,
 } from "./types";
 
-const daysFromNow = (d: number) => new Date(Date.now() + d * 86400000).toISOString();
-const daysAgo = (d: number) => new Date(Date.now() - d * 86400000).toISOString();
+const TEAM_DEPARTMENT: Record<string, EnterpriseDepartment> = {
+  Billing: "FIN",
+  Payments: "FIN",
+  Platform: "Platform",
+  Identity: "Security",
+  Search: "CRM",
+  Mobile: "CRM",
+  Core: "Platform",
+  Data: "Operations",
+  HR: "HR",
+};
 
-export const releaseTimeline: ReleaseTimelineEntry[] = [
-  {
-    id: "tl-fin-sit1",
-    name: "FIN SIT 1",
-    department: "FIN",
-    size: "high",
-    impact: "high",
-    startDate: daysFromNow(14),
-    endDate: daysFromNow(28),
-    status: "Scheduled",
-  },
-  {
-    id: "tl-fin-sit2",
-    name: "FIN SIT 2",
-    department: "FIN",
-    size: "high",
-    impact: "medium",
-    startDate: daysFromNow(45),
-    endDate: daysFromNow(59),
-    status: "Scheduled",
-  },
-  {
-    id: "tl-fin-uat",
-    name: "FIN UAT",
-    department: "FIN",
-    size: "medium",
-    impact: "high",
-    startDate: daysFromNow(75),
-    endDate: daysFromNow(89),
-    status: "Scheduled",
-  },
-  {
-    id: "tl-hr-core",
-    name: "HR Core Upgrade",
-    department: "HR",
-    size: "medium",
-    impact: "medium",
-    startDate: daysFromNow(7),
-    endDate: daysFromNow(21),
-    status: "At Risk",
-  },
-  {
-    id: "tl-sec-patch",
-    name: "Security Patch Window",
-    department: "Security",
-    size: "low",
-    impact: "high",
-    startDate: daysFromNow(3),
-    endDate: daysFromNow(5),
-    status: "Ready",
-  },
-  {
-    id: "tl-crm-rollout",
-    name: "CRM v4 Rollout",
-    department: "CRM",
-    size: "high",
-    impact: "medium",
-    startDate: daysFromNow(30),
-    endDate: daysFromNow(44),
-    status: "Scheduled",
-  },
-  {
-    id: "tl-plat-infra",
-    name: "Platform Infra Refresh",
-    department: "Platform",
-    size: "medium",
-    impact: "low",
-    startDate: daysFromNow(60),
-    endDate: daysFromNow(74),
-    status: "Scheduled",
-  },
-  {
-    id: "tl-ops-dr",
-    name: "DR Failover Test",
-    department: "Operations",
-    size: "low",
-    impact: "medium",
-    startDate: daysFromNow(20),
-    endDate: daysFromNow(22),
-    status: "Ready",
-  },
-];
+const TEAM_SYSTEM: Record<string, string> = {
+  Platform: "SAP",
+  Billing: "FIN",
+  Payments: "FIN",
+  Search: "CRM",
+  Mobile: "CRM",
+  Identity: "Security Core",
+  Core: "SAP",
+  Data: "Oracle",
+};
 
-export const envBookings: EnvBooking[] = [
-  { id: "bk-sap-jun", system: "SAP", month: "JUNE", status: "IDLE" },
-  {
-    id: "bk-sap-jul",
-    system: "SAP",
-    month: "JULY",
-    status: "BOOKED",
-    team: "FIN",
-    purpose: "SIT 1",
-    contact: "Guru",
-  },
-  {
-    id: "bk-sap-aug",
-    system: "SAP",
-    month: "AUG",
-    status: "BOOKED",
-    team: "FIN",
-    purpose: "SIT 2",
-    contact: "Guru",
-  },
-  {
-    id: "bk-sap-sep",
-    system: "SAP",
-    month: "SEP",
-    status: "BOOKED",
-    team: "FIN",
-    purpose: "UAT",
-    contact: "Guru",
-  },
-  { id: "bk-sap-oct", system: "SAP", month: "OCT", status: "IDLE" },
-  { id: "bk-oracle-jun", system: "Oracle", month: "JUNE", status: "BOOKED", team: "Platform", purpose: "Dev refresh", contact: "Alex Kim" },
-  { id: "bk-oracle-jul", system: "Oracle", month: "JULY", status: "IDLE" },
-  { id: "bk-oracle-aug", system: "Oracle", month: "AUG", status: "MAINTENANCE", team: "Platform", purpose: "Patch cycle", contact: "Alex Kim" },
-];
+const TEAM_APP: Record<string, string> = {
+  Platform: "SAP",
+  Billing: "FIN",
+  Payments: "FIN",
+  Search: "CRM",
+  Mobile: "CRM",
+  Identity: "Security Core",
+  Core: "Core Banking",
+  Data: "Oracle",
+};
 
-export const enterpriseSystemNodes: EnterpriseSystemNode[] = [
-  { id: "test-sap", label: "TEST SAP", type: "environment" },
-  { id: "uat-asset", label: "UAT Asset Mgmt", type: "environment", parentId: "test-sap" },
-  { id: "dev-oracle", label: "DEV Oracle", type: "environment", parentId: "test-sap" },
-  { id: "prod-sap", label: "PROD SAP", type: "environment" },
-  { id: "prod-oracle", label: "PROD Oracle", type: "environment", parentId: "prod-sap" },
-  { id: "app-fin", label: "FIN Application", type: "application", parentId: "uat-asset" },
-  { id: "app-crm", label: "CRM Application", type: "application", parentId: "dev-oracle" },
-];
+const CRITICAL_SERVICES = new Set(services.filter((s) => s.criticality === "Critical").map((s) => s.id));
 
-export const applicationVersions: ApplicationVersionRow[] = [
-  { application: "SAP", dev: "V2.0", test: "V2.0", prod: "V1.0" },
-  { application: "FIN", dev: "V3.31", test: "V3.2", prod: "V3.0" },
-  { application: "CRM", dev: "V4.0", test: "V3.2.1", prod: "V3.0" },
-];
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUNE", "JULY", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-export const applicationEnvConfigs: ApplicationEnvConfig[] = [
-  {
-    application: "SAP",
-    environment: "DEV",
-    infra: "AWS ap-southeast-2 · t3.xlarge × 4",
-    firewall: "Allow 443 inbound from corp VPN",
-    networkZone: "DMZ-Dev",
-    lastUpdated: daysAgo(2),
-  },
-  {
-    application: "SAP",
-    environment: "TEST",
-    infra: "On-prem ESXi cluster · 8 vCPU / 32 GB",
-    firewall: "Restricted — test subnet only",
-    networkZone: "Internal-Test",
-    lastUpdated: daysAgo(1),
-  },
-  {
-    application: "SAP",
-    environment: "PROD",
-    infra: "On-prem HA pair · 16 vCPU / 64 GB",
-    firewall: "Deny all except approved CIDRs",
-    networkZone: "Production",
-    lastUpdated: daysAgo(0.5),
-  },
-  {
-    application: "FIN",
-    environment: "DEV",
-    infra: "Azure AKS · 3 nodes",
-    firewall: "Open to dev team subnets",
-    networkZone: "DMZ-Dev",
-    lastUpdated: daysAgo(3),
-  },
-  {
-    application: "FIN",
-    environment: "UAT",
-    infra: "Azure AKS · 5 nodes",
-    firewall: "Business UAT sign-off required",
-    networkZone: "Internal-UAT",
-    lastUpdated: daysAgo(1),
-  },
-  {
-    application: "CRM",
-    environment: "DEV",
-    infra: "GCP GKE · autopilot",
-    firewall: "Allow 443 from CI runners",
-    networkZone: "DMZ-Dev",
-    lastUpdated: daysAgo(4),
-  },
-];
+function deptForTeam(team: string): EnterpriseDepartment {
+  return TEAM_DEPARTMENT[team] ?? "Operations";
+}
 
-export const applicationConfigs: ApplicationConfig[] = [
-  {
-    application: "SAP",
-    baseUrl: "https://sap-dev.corp.example.com",
-    apiUrl: "https://sap-api-dev.corp.example.com/v2",
-    featureFlags: [
-      { name: "new-gl-posting", enabled: true, environment: "DEV" },
-      { name: "parallel-run", enabled: false, environment: "DEV" },
-      { name: "audit-trail-v2", enabled: true, environment: "TEST" },
-    ],
-    lastUpdated: daysAgo(1),
-  },
-  {
-    application: "FIN",
-    baseUrl: "https://fin-uat.corp.example.com",
-    apiUrl: "https://fin-api-uat.corp.example.com",
-    featureFlags: [
-      { name: "batch-settlement", enabled: true, environment: "UAT" },
-      { name: "real-time-ledger", enabled: false, environment: "UAT" },
-      { name: "reg-reporting", enabled: true, environment: "PROD" },
-    ],
-    lastUpdated: daysAgo(0.5),
-  },
-  {
-    application: "CRM",
-    baseUrl: "https://crm-dev.corp.example.com",
-    apiUrl: "https://crm-api-dev.corp.example.com/v4",
-    featureFlags: [
-      { name: "ai-lead-scoring", enabled: true, environment: "DEV" },
-      { name: "omni-channel", enabled: true, environment: "DEV" },
-      { name: "legacy-sync", enabled: false, environment: "TEST" },
-    ],
-    lastUpdated: daysAgo(2),
-  },
-];
+function sizeForRelease(r: Release): ReleaseSize {
+  if (r.filesChanged > 800 || r.status === "Blocked") return "high";
+  if (r.filesChanged > 250) return "medium";
+  return "low";
+}
 
-export const enterpriseReleaseImpacts: EnterpriseReleaseImpact[] = [
-  {
-    releaseId: "tl-fin-uat",
-    releaseName: "FIN UAT",
-    prerequisites: [
-      "FIN SIT 1 and SIT 2 sign-off complete",
-      "SAP TEST environment at V2.0",
-      "Change record CR-2026-1842 approved",
-    ],
-    conditions: ["queues paused", "events paused", "DB freezes", "apps down"],
-    active: false,
-  },
-  {
-    releaseId: "tl-fin-sit1",
-    releaseName: "FIN SIT 1",
-    prerequisites: ["SAP DEV promoted to TEST", "Test data refresh complete"],
-    conditions: ["queues paused", "events paused"],
-    active: true,
-  },
-  {
-    releaseId: "tl-sec-patch",
-    releaseName: "Security Patch Window",
-    prerequisites: ["Emergency CAB approval", "Rollback runbook verified"],
-    conditions: ["apps down", "customer support down"],
-    active: false,
-  },
-];
+function impactForRelease(r: Release): ReleaseImpact {
+  const touchesCritical = r.dependsOnServices.some((id) => CRITICAL_SERVICES.has(id));
+  if (r.status === "Blocked" || (touchesCritical && r.status === "At Risk")) return "high";
+  if (touchesCritical || r.changeRecord?.riskTier === "High") return "medium";
+  return "low";
+}
 
+function durationDays(size: ReleaseSize): number {
+  if (size === "high") return 14;
+  if (size === "medium") return 7;
+  return 4;
+}
+
+function addDays(iso: string, days: number): string {
+  return new Date(new Date(iso).getTime() + days * 86400000).toISOString();
+}
+
+function monthLabel(d: Date): string {
+  return MONTHS[d.getMonth()] ?? d.toLocaleString("en-AU", { month: "short" }).toUpperCase();
+}
+
+function envStageFromDeployment(env?: string): EnterpriseEnvStage {
+  if (!env) return "DEV";
+  const e = env.toLowerCase();
+  if (e.includes("prod")) return "PROD";
+  if (e.includes("uat")) return "UAT";
+  if (e.includes("stag") || e.includes("test")) return "TEST";
+  return "DEV";
+}
+
+function impactConditions(r: Release): EnterpriseImpactCondition[] {
+  const tier = r.changeRecord?.riskTier;
+  if (tier === "Critical") return ["queues paused", "events paused", "DB freezes", "apps down", "customer support down"];
+  if (tier === "High") return ["queues paused", "events paused", "DB freezes", "apps down"];
+  if (tier === "Medium") return ["queues paused", "events paused"];
+  if (r.filesChanged > 600) return ["queues paused", "events paused"];
+  return ["events paused"];
+}
+
+export function buildReleaseTimeline(source: Release[] = releases): ReleaseTimelineEntry[] {
+  const horizon = Date.now() + 120 * 86400000;
+  const windowStart = Date.now() - 14 * 86400000;
+
+  return source
+    .filter((r) => {
+      const t = new Date(r.targetDate).getTime();
+      return r.status !== "Shipped" && t >= windowStart && t <= horizon;
+    })
+    .sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime())
+    .slice(0, 12)
+    .map((r) => {
+      const size = sizeForRelease(r);
+      const span = durationDays(size);
+      return {
+        id: `tl-${r.id}`,
+        name: r.name,
+        department: deptForTeam(r.team),
+        size,
+        impact: impactForRelease(r),
+        startDate: addDays(r.targetDate, -span),
+        endDate: addDays(r.targetDate, 2),
+        status: r.status,
+        releaseId: r.id,
+        version: r.version,
+        owner: r.owner,
+      };
+    });
+}
+
+export function buildEnvBookings(source: Release[] = releases): EnvBooking[] {
+  const now = new Date();
+  const systems = ["SAP", "FIN", "Oracle", "CRM"];
+  const rows: EnvBooking[] = [];
+
+  for (let m = 0; m < 5; m++) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() + m, 1);
+    const monthIdx = monthDate.getMonth();
+    const label = monthLabel(monthDate);
+
+    for (const system of systems) {
+      const match = source
+        .filter((r) => r.status !== "Shipped" && TEAM_SYSTEM[r.team] === system)
+        .find((r) => {
+          const td = new Date(r.targetDate);
+          return td.getMonth() === monthIdx && td.getFullYear() === monthDate.getFullYear();
+        });
+
+      const maint = m === 2 && system === "Oracle";
+
+      rows.push({
+        id: `bk-${system.toLowerCase()}-${label}`,
+        system,
+        month: label,
+        monthIndex: monthIdx,
+        status: maint ? "MAINTENANCE" : match ? "BOOKED" : "IDLE",
+        team: match?.team,
+        purpose: match ? `${match.name} (${match.version})` : undefined,
+        contact: match?.owner,
+        releaseId: match?.id,
+        version: match?.version,
+      });
+    }
+  }
+
+  return rows;
+}
+
+export function buildSystemMapping(source: Service[] = services): EnterpriseSystemNode[] {
+  const gateway = source.find((s) => s.id === "svc-gateway") ?? source[0];
+  const payments = source.find((s) => s.id === "svc-payments");
+  const billing = source.find((s) => s.id === "svc-billing");
+  const search = source.find((s) => s.id === "svc-search");
+  const ledger = source.find((s) => s.id === "svc-ledger");
+  const mobile = source.find((s) => s.id === "svc-mobile");
+
+  const svcStatus = (s: Service): EnterpriseSystemNode["status"] => {
+    if (s.unstable || s.recentIncidents.some((i) => i.severity === "Sev-1")) return "critical";
+    if (s.criticality === "Critical" && s.recentIncidents.length > 0) return "warning";
+    return "healthy";
+  };
+
+  const latestForService = (serviceId: string): string | undefined => {
+    const rel = releases.find((r) => r.dependsOnServices.includes(serviceId) && r.status !== "Shipped");
+    return rel?.version;
+  };
+
+  const nodes: EnterpriseSystemNode[] = [
+    {
+      id: "env-test-sap",
+      label: "TEST SAP",
+      type: "environment",
+      serviceId: gateway?.id,
+      status: gateway ? svcStatus(gateway) : "healthy",
+      version: latestForService(gateway?.id ?? ""),
+      criticality: gateway?.criticality,
+    },
+    {
+      id: "env-uat-asset",
+      label: "UAT Asset Mgmt",
+      type: "environment",
+      parentId: "env-test-sap",
+      serviceId: billing?.id,
+      status: billing ? svcStatus(billing) : "healthy",
+      version: latestForService(billing?.id ?? ""),
+      criticality: billing?.criticality,
+    },
+    {
+      id: "env-dev-oracle",
+      label: "DEV Oracle",
+      type: "environment",
+      parentId: "env-test-sap",
+      serviceId: ledger?.id,
+      status: ledger ? svcStatus(ledger) : "healthy",
+      version: latestForService(ledger?.id ?? ""),
+      criticality: ledger?.criticality,
+    },
+    {
+      id: "env-prod-sap",
+      label: "PROD SAP",
+      type: "environment",
+      serviceId: payments?.id,
+      status: payments ? svcStatus(payments) : "healthy",
+      version: releases.find((r) => r.status === "Shipped" && r.dependsOnServices.includes("svc-payments"))?.version,
+      criticality: payments?.criticality,
+    },
+    {
+      id: "app-fin",
+      label: "FIN Application",
+      type: "application",
+      parentId: "env-uat-asset",
+      serviceId: billing?.id,
+      status: billing ? svcStatus(billing) : "healthy",
+      version: latestForService(billing?.id ?? ""),
+    },
+    {
+      id: "app-crm",
+      label: "CRM Application",
+      type: "application",
+      parentId: "env-dev-oracle",
+      serviceId: search?.id,
+      status: search ? svcStatus(search) : "healthy",
+      version: latestForService(search?.id ?? ""),
+    },
+    {
+      id: "app-mobile",
+      label: "Mobile BFF",
+      type: "application",
+      parentId: "env-prod-sap",
+      serviceId: mobile?.id,
+      status: mobile ? svcStatus(mobile) : "healthy",
+      version: latestForService(mobile?.id ?? ""),
+    },
+  ];
+
+  return nodes;
+}
+
+export function buildApplicationVersions(source: Release[] = releases): ApplicationVersionRow[] {
+  const apps = new Map<string, { team: string; release: Release; services: string[] }>();
+
+  for (const r of source) {
+    const app = TEAM_APP[r.team] ?? r.team;
+    const existing = apps.get(app);
+    if (!existing || new Date(r.targetDate) > new Date(existing.release.targetDate)) {
+      apps.set(app, {
+        team: r.team,
+        release: r,
+        services: r.dependsOnServices,
+      });
+    }
+  }
+
+  return Array.from(apps.entries()).map(([application, { team, release, services: svcIds }]) => {
+    const promos = buildEnvironmentPromotions(release).filter((p) => p.region === "ap-southeast-2");
+    const dev = promos.find((p) => p.environment === "dev")?.version ?? release.version;
+    const test = promos.find((p) => p.environment === "staging")?.version ?? dev;
+    const prod = promos.find((p) => p.environment === "prod")?.version ?? test;
+    const drift = dev !== prod || test !== prod;
+    const promotionPct = prod === dev ? 100 : test === prod ? 66 : 33;
+
+    return {
+      application,
+      dev,
+      test,
+      prod,
+      serviceIds: svcIds,
+      drift,
+      releaseId: release.id,
+      team,
+      promotionPct,
+    };
+  });
+}
+
+export function buildApplicationEnvConfigs(source: Release[] = releases): ApplicationEnvConfig[] {
+  const configs: ApplicationEnvConfig[] = [];
+  const seen = new Set<string>();
+
+  for (const r of source) {
+    if (!r.deployment) continue;
+    const app = TEAM_APP[r.team] ?? r.team;
+    const stage = envStageFromDeployment(r.deployment.environment);
+    const key = `${app}-${stage}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const firewall =
+      r.approvals.some((a) => a.gate === "Security" && a.status === "Pending")
+        ? "Security review pending — restricted ingress"
+        : stage === "PROD"
+          ? "Deny all except approved CIDRs"
+          : stage === "TEST" || stage === "UAT"
+            ? "Restricted — test subnet only"
+            : "Allow 443 inbound from corp VPN";
+
+    configs.push({
+      application: app,
+      environment: stage,
+      infra: `${r.deployment.cluster} · ${r.deployment.pipeline} · ns/${r.deployment.targetNamespace}`,
+      firewall,
+      networkZone: stage === "PROD" ? "Production" : stage === "UAT" ? "Internal-UAT" : stage === "TEST" ? "Internal-Test" : "DMZ-Dev",
+      lastUpdated: r.build.lastRun,
+    });
+  }
+
+  return configs.sort((a, b) => a.application.localeCompare(b.application));
+}
+
+export function buildApplicationConfigs(source: Release[] = releases): ApplicationConfig[] {
+  const flagConnector = connectors.find((c) => c.category === "Feature Flags");
+  const apps = new Map<string, Release>();
+
+  for (const r of source) {
+    const app = TEAM_APP[r.team] ?? r.team;
+    const existing = apps.get(app);
+    if (!existing || new Date(r.build.lastRun) > new Date(existing.build.lastRun)) {
+      apps.set(app, r);
+    }
+  }
+
+  return Array.from(apps.entries()).map(([application, r]) => {
+    const slug = application.toLowerCase().replace(/\s+/g, "-");
+    const stage = envStageFromDeployment(r.deployment?.environment);
+    const openFlags = r.tickets.filter((t) => t.status !== "Done").length;
+
+    return {
+      application,
+      baseUrl: `https://${slug}-${stage.toLowerCase()}.corp.example.com`,
+      apiUrl: `https://${slug}-api-${stage.toLowerCase()}.corp.example.com`,
+      featureFlags: [
+        {
+          name: `${slug}-rollout`,
+          enabled: r.status === "Ready" || r.status === "Shipped",
+          environment: stage,
+        },
+        {
+          name: `${slug}-dark-launch`,
+          enabled: r.build.status === "Passed",
+          environment: "DEV" as EnterpriseEnvStage,
+        },
+        {
+          name: flagConnector ? "launchdarkly-sync" : "local-flags",
+          enabled: !!flagConnector && flagConnector.status === "Connected",
+          environment: stage,
+        },
+        {
+          name: `${slug}-canary`,
+          enabled: openFlags === 0 && r.build.status === "Passed",
+          environment: stage,
+        },
+      ],
+      lastUpdated: r.build.lastRun,
+    };
+  });
+}
+
+export function buildEnterpriseImpacts(source: Release[] = releases): EnterpriseReleaseImpact[] {
+  const now = Date.now();
+
+  return source
+    .filter((r) => r.changeRecord || r.status === "At Risk" || r.status === "Blocked")
+    .slice(0, 6)
+    .map((r) => {
+      const start = r.changeRecord ? new Date(r.changeRecord.scheduledStart).getTime() : new Date(r.targetDate).getTime();
+      const active = Math.abs(now - start) < 2 * 86400000 && r.status !== "Shipped";
+
+      const prerequisites: string[] = [];
+      if (r.changeRecord) prerequisites.push(`Change record ${r.changeRecord.crNumber} — ${r.changeRecord.cabStatus}`);
+      if (r.approvals.some((a) => a.status === "Pending")) {
+        prerequisites.push(`${r.approvals.filter((a) => a.status === "Pending").length} approval gates pending`);
+      }
+      r.dependsOnServices.slice(0, 2).forEach((sid) => {
+        const svc = services.find((s) => s.id === sid);
+        if (svc) prerequisites.push(`${svc.name} must be stable (${svc.criticality})`);
+      });
+      freezeWindows.forEach((fw) => {
+        const td = new Date(r.targetDate);
+        if (td >= new Date(fw.start) && td <= new Date(fw.end)) {
+          prerequisites.push(`Avoids freeze: ${fw.name}`);
+        }
+      });
+      if (prerequisites.length === 0) prerequisites.push("Standard pre-release checklist complete");
+
+      return {
+        releaseId: r.id,
+        releaseName: r.name,
+        version: r.version,
+        prerequisites,
+        conditions: impactConditions(r),
+        active,
+      };
+    });
+}
+
+export function buildEnvironmentDeskStats(snapshot: Omit<EnvironmentDeskSnapshot, "stats">): EnvironmentDeskStats {
+  return {
+    timelineCount: snapshot.timeline.length,
+    bookedEnvs: snapshot.bookings.filter((b) => b.status === "BOOKED").length,
+    versionDrift: snapshot.versions.filter((v) => v.drift).length,
+    activeImpacts: snapshot.impacts.filter((i) => i.active).length,
+    mappedServices: snapshot.systemNodes.filter((n) => n.serviceId).length,
+    promotionGap: snapshot.versions.filter((v) => v.promotionPct < 100).length,
+  };
+}
+
+export function buildEnvironmentDesk(
+  sourceReleases: Release[] = releases,
+  sourceServices: Service[] = services
+): EnvironmentDeskSnapshot {
+  const timeline = buildReleaseTimeline(sourceReleases);
+  const bookings = buildEnvBookings(sourceReleases);
+  const systemNodes = buildSystemMapping(sourceServices);
+  const versions = buildApplicationVersions(sourceReleases);
+  const envConfigs = buildApplicationEnvConfigs(sourceReleases);
+  const appConfigs = buildApplicationConfigs(sourceReleases);
+  const impacts = buildEnterpriseImpacts(sourceReleases);
+
+  const partial = { timeline, bookings, systemNodes, versions, envConfigs, appConfigs, impacts };
+  return { ...partial, stats: buildEnvironmentDeskStats(partial) };
+}
+
+/** @deprecated Use buildEnvironmentDesk() — kept for static re-exports */
+export const releaseTimeline = buildReleaseTimeline();
+export const envBookings = buildEnvBookings();
+export const enterpriseSystemNodes = buildSystemMapping();
+export const applicationVersions = buildApplicationVersions();
+export const applicationEnvConfigs = buildApplicationEnvConfigs();
+export const applicationConfigs = buildApplicationConfigs();
+export const enterpriseReleaseImpacts = buildEnterpriseImpacts();
 export const ENTERPRISE_SYSTEMS = ["SAP", "Oracle", "FIN", "CRM"] as const;
+
+export const environmentDesk = buildEnvironmentDesk();
