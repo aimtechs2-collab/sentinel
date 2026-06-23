@@ -43,6 +43,7 @@ Flagship demo prototype for stakeholder screen recordings. Static dummy data wit
 | `/compare` | Side-by-side release comparison |
 | `/knowledge-graph` | Org-wide knowledge graph (releases, services, people, CRs) |
 | `/calendar` | Release calendar + freeze windows |
+| `/environments` | **Environment Desk** — timeline, env booking, topology, version matrix, config ([docs](./docs/ENVIRONMENT-DESK.md)) |
 | `/history` | Global audit trail (static + your live decisions/deployments) |
 | `/connectors` | 59 enterprise integrations — errors link to release blockers |
 | `/agents` | Agent control room — 13 AI agents with pause/resume |
@@ -56,6 +57,15 @@ Flagship demo prototype for stakeholder screen recordings. Static dummy data wit
 3. Use the bell icon for unread alerts; click **Audit trail** on a notification to jump to filtered history.
 4. **Reset demo state** from the Templates page to clear `localStorage` and start fresh.
 
+## Environment Desk
+
+Portfolio view for release managers: **schedule → environment → version → impact** in one screen.
+
+- **Route:** `/environments` (sidebar: Portfolio → Environment Desk)
+- **Documentation:** [docs/ENVIRONMENT-DESK.md](./docs/ENVIRONMENT-DESK.md)
+
+Synthetic data is derived from the release train (`releases`, `services`, deployment configs, change records). Panels cross-link: select a timeline bar or version row to sync booking and config tabs. Use the Quick Start template **Environment desk** under Planning for a guided walkthrough.
+
 ## Demo anchors
 
 - **v2.14.0** — overdue Security approval, high file-change count
@@ -65,3 +75,7 @@ Flagship demo prototype for stakeholder screen recordings. Static dummy data wit
 ## Tech stack
 
 Next.js 14 · TypeScript · Tailwind CSS · recharts · reactflow · OpenAI / Anthropic
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for release notes.
