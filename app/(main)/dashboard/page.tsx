@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EnvironmentDeskDashboardCard } from "@/components/environments/EnvironmentDeskDashboardCard";
+import { NeedsAttentionPanel } from "@/components/dashboard/NeedsAttentionPanel";
 import { UnifiedPortfolioPanel } from "@/components/dashboard/UnifiedPortfolioPanel";
 import { TopBar } from "@/components/layout/TopBar";
 import { ReleaseFiltersBar } from "@/components/releases/ReleaseFiltersBar";
@@ -11,6 +12,7 @@ import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/da
 import { callAgent } from "@/lib/agent-client";
 import { buildDashboardSummaryContext } from "@/lib/summary-context";
 import { filterLabel } from "@/lib/release-filters";
+import type { NeedsAttentionItem } from "@/lib/needs-attention";
 import { useReleaseFilters } from "@/context/ReleaseFiltersContext";
 import { formatDateTime, cn } from "@/lib/utils";
 import { AlertTriangle, Calendar, Clock, Flag, Package } from "lucide-react";
@@ -57,6 +59,7 @@ export default function DashboardPage() {
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [attention, setAttention] = useState<NeedsAttentionItem[]>([]);
 
   const {
     filters,
@@ -79,17 +82,20 @@ export default function DashboardPage() {
     setSummary(null);
     setSummaryError(null);
     setSummaryLoading(false);
+    setAttention([]);
 
     const dashUrl = `/api/dashboard?period=${period}${filterQuery}`;
     const overviewUrl = `/api/unified/overview?period=${period}${filterQuery}`;
+    const attentionUrl = `/api/needs-attention?period=${period}${filterQuery}`;
 
     let cancelled = false;
 
     Promise.all([
       fetch(dashUrl).then(async (r) => (r.ok ? r.json() : Promise.reject(new Error("Dashboard load failed")))),
       fetch(overviewUrl).then(async (r) => (r.ok ? r.json() : Promise.reject(new Error("Overview load failed")))),
+      fetch(attentionUrl).then(async (r) => (r.ok ? r.json() : { items: [] })),
     ])
-      .then(([dash, ov]) => {
+      .then(([dash, ov, att]) => {
         if (cancelled) return;
         if (!isDashboardData(dash)) {
           setFetchError("Dashboard data was invalid");
@@ -97,6 +103,7 @@ export default function DashboardPage() {
         }
         setData(dash);
         setOverview(ov);
+        setAttention(Array.isArray(att.items) ? att.items : []);
       })
       .catch((e) => {
         if (!cancelled) {
@@ -224,6 +231,11 @@ export default function DashboardPage() {
           <MetricCard key={label} label={label} value={value} icon={icon} delay={i * 0.05} />
         ))}
       </div>
+
+      <NeedsAttentionPanel
+        items={attention.slice(0, 8)}
+        viewAllHref={`/releases?attention=1${filterQuery}`}
+      />
 
       {overview && <UnifiedPortfolioPanel data={overview} />}
 

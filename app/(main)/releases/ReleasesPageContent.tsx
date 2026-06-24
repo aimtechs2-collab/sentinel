@@ -7,6 +7,7 @@ import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { TopBar } from "@/components/layout/TopBar";
 import { StatusBadge } from "@/components/badges/StatusBadge";
 import { SourceBadgeInline } from "@/components/dashboard/UnifiedPortfolioPanel";
+import { NeedsAttentionPanel } from "@/components/dashboard/NeedsAttentionPanel";
 import { ReleaseFormModal } from "@/components/releases/ReleaseFormModal";
 import { ReleaseFiltersBar } from "@/components/releases/ReleaseFiltersBar";
 import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
@@ -16,6 +17,7 @@ import {
   dbReleaseMatchesFilters,
   filterLabel,
 } from "@/lib/release-filters";
+import { isNeedsAttentionStatus, type NeedsAttentionItem } from "@/lib/needs-attention";
 import {
   dbToUnified,
   demoReleaseMatchesFilters,
@@ -51,6 +53,7 @@ export default function ReleasesPageContent() {
 
   const {
     filters,
+    filterQuery,
     hasRefinement,
     departments,
     applications,
@@ -60,10 +63,14 @@ export default function ReleasesPageContent() {
     refreshLookups,
   } = useReleaseFilters();
 
+  const attentionMode = searchParams.get("attention") === "1";
+  const statusFilter = searchParams.get("status");
+
   const [view, setView] = useState<ViewFilter>(initialView);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editRow, setEditRow] = useState<ReleaseRow | null>(null);
+  const [attentionItems, setAttentionItems] = useState<NeedsAttentionItem[]>([]);
 
   useEffect(() => {
     setView((searchParams.get("view") as ViewFilter) || "all");
@@ -72,6 +79,20 @@ export default function ReleasesPageContent() {
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then((d) => setUser(d.user));
   }, []);
+
+  useEffect(() => {
+    if (!attentionMode) {
+      setAttentionItems([]);
+      return;
+    }
+    fetch(`/api/needs-attention?period=month${filterQuery}`)
+      .then((r) => r.json())
+      .then((d) => {
+        let items: NeedsAttentionItem[] = d.items ?? [];
+        if (statusFilter) items = items.filter((i) => i.status === statusFilter);
+        setAttentionItems(items);
+      });
+  }, [attentionMode, filterQuery, statusFilter]);
 
   const scopeLabel = useMemo(
     () => filterLabel(filters, departments, applications, environments),
@@ -92,8 +113,9 @@ export default function ReleasesPageContent() {
 
     if (view === "database") return merged.filter((r) => r.source === "database");
     if (view === "demo") return merged.filter((r) => r.source === "demo");
+    if (attentionMode) return merged.filter((r) => isNeedsAttentionStatus(r.status));
     return merged;
-  }, [dbRows, view, filters, bookings, environments, departments, applications]);
+  }, [dbRows, view, filters, bookings, environments, departments, applications, attentionMode]);
 
   const canEdit = user?.role === "editor" || user?.role === "admin";
 
@@ -108,33 +130,86 @@ export default function ReleasesPageContent() {
   return (
     <div>
       <TopBar
-        title="Releases"
+        title={attentionMode ? "Needs attention" : "Releases"}
         subtitle={
-          hasRefinement
-            ? `${unified.length} releases · ${scopeLabel}`
-            : `${unified.length} releases — database MVP and demo command center`
+          attentionMode
+            ? `${attentionItems.length} blocked or at-risk release${attentionItems.length === 1 ? "" : "s"}${hasRefinement ? ` · ${scopeLabel}` : ""}`
+            : hasRefinement
+              ? `${unified.length} releases · ${scopeLabel}`
+              : `${unified.length} releases — database MVP and demo command center`
         }
         highlight
       />
 
       <div className="flex flex-wrap gap-2 mb-3">
-        {(["all", "database", "demo"] as ViewFilter[]).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setView(v)}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-medium capitalize border transition-colors",
-              view === v ? "bg-brand-500 text-white border-brand-500" : "border-gray-200 text-gray-600 hover:border-brand-300"
-            )}
-          >
-            {v === "all" ? "All sources" : v}
-          </button>
-        ))}
+        {attentionMode ? (
+          <>
+            <ProgressLink
+              href="/releases"
+              className="rounded-lg px-3 py-1.5 text-xs font-medium border border-gray-200 text-gray-600 hover:border-brand-300"
+            >
+              ← All releases
+            </ProgressLink>
+            <ProgressLink
+              href={`/releases?attention=1${filterQuery}`}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors",
+                !statusFilter ? "bg-brand-500 text-white border-brand-500" : "border-gray-200 text-gray-600"
+              )}
+            >
+              All stuck
+            </ProgressLink>
+            <ProgressLink
+              href={`/releases?attention=1&status=Blocked${filterQuery}`}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors",
+                statusFilter === "Blocked" ? "bg-brand-500 text-white border-brand-500" : "border-gray-200 text-gray-600"
+              )}
+            >
+              Blocked
+            </ProgressLink>
+            <ProgressLink
+              href={`/releases?attention=1&status=At%20Risk${filterQuery}`}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors",
+                statusFilter === "At Risk" ? "bg-brand-500 text-white border-brand-500" : "border-gray-200 text-gray-600"
+              )}
+            >
+              At risk
+            </ProgressLink>
+          </>
+        ) : (
+          <>
+            <ProgressLink
+              href={`/releases?attention=1${filterQuery}`}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium border border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-300"
+            >
+              Needs attention
+            </ProgressLink>
+            {(["all", "database", "demo"] as ViewFilter[]).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium capitalize border transition-colors",
+                  view === v ? "bg-brand-500 text-white border-brand-500" : "border-gray-200 text-gray-600 hover:border-brand-300"
+                )}
+              >
+                {v === "all" ? "All sources" : v}
+              </button>
+            ))}
+          </>
+        )}
       </div>
 
       <ReleaseFiltersBar className="mb-4" />
 
+      {attentionMode && (
+        <NeedsAttentionPanel items={attentionItems} showViewAll={false} />
+      )}
+
+      {!attentionMode && (
       <DataTable
         title="All Releases"
         subtitle="DB rows are editable; demo rows open the synthetic command center"
@@ -189,6 +264,7 @@ export default function ReleasesPageContent() {
           </tbody>
         </table>
       </DataTable>
+      )}
 
       <ReleaseFormModal
         open={modalOpen}
