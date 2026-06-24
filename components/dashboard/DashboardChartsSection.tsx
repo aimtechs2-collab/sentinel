@@ -3,11 +3,15 @@
 import { useMemo } from "react";
 import Grid from "@mui/material/Grid";
 import { WeeklyOverviewChart } from "@/components/materio/crm/WeeklyOverviewChart";
-import { TotalGrowthChart } from "@/components/materio/crm/TotalGrowthChart";
+import { TotalProfitChart } from "@/components/materio/crm/TotalProfitChart";
 import { MeetingScheduleList, type ScheduleItem } from "@/components/materio/crm/MeetingScheduleList";
 import { ActivityFeedCard, type ActivityItem } from "@/components/materio/crm/ActivityFeedCard";
 import { UpgradePlanCard } from "@/components/materio/crm/UpgradePlanCard";
-import { buildGrowthSeries, buildWeeklyOverview } from "@/lib/materio/chart-data";
+import {
+  buildPortfolioStackSeries,
+  buildPortfolioSummary,
+  buildWeeklyOverview,
+} from "@/lib/materio/chart-data";
 
 type Props = {
   releases: { releaseDate?: string | Date | null; date?: string; status?: string }[];
@@ -17,6 +21,7 @@ type Props = {
   upgradeDescription?: string;
   upgradeCtaLabel?: string;
   upgradeCtaHref?: string;
+  reportHref?: string;
 };
 
 export function DashboardChartsSection({
@@ -27,12 +32,20 @@ export function DashboardChartsSection({
   upgradeDescription,
   upgradeCtaLabel,
   upgradeCtaHref,
+  reportHref,
 }: Props) {
   const weekly = useMemo(() => buildWeeklyOverview(releases), [releases]);
-  const growth = useMemo(() => buildGrowthSeries(releases), [releases]);
+  const stack = useMemo(() => buildPortfolioStackSeries(releases), [releases]);
+  const stackSummary = useMemo(() => buildPortfolioSummary(stack), [stack]);
 
   return (
     <>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12 }}>
+          <TotalProfitChart data={stack} summary={stackSummary} reportHref={reportHref} />
+        </Grid>
+      </Grid>
+
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <WeeklyOverviewChart data={weekly} />
@@ -49,20 +62,16 @@ export function DashboardChartsSection({
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <TotalGrowthChart data={growth} />
+          <ActivityFeedCard
+            items={activityItems}
+            title="Connector activity"
+            subheader="Recent sync events from integrated sources"
+          />
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>
           <MeetingScheduleList items={scheduleItems} />
         </Grid>
       </Grid>
-
-      {activityItems.length > 0 && (
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, lg: 4 }}>
-            <ActivityFeedCard items={activityItems} />
-          </Grid>
-        </Grid>
-      )}
     </>
   );
 }

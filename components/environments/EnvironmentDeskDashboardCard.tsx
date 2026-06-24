@@ -1,49 +1,20 @@
 "use client";
 
-import { ProgressLink } from "@/components/layout/NavigationProgress";
-import { AdvancedCard } from "@/components/ui/advanced-card";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
+import { alpha, useTheme } from "@mui/material/styles";
+import Link from "next/link";
+import { AlertTriangle, GitBranch, Layers, Server } from "lucide-react";
+import { MaterioCard } from "@/components/materio/crm/MaterioCard";
 import { buildEnvironmentDesk } from "@/lib/enterprise-env-data";
 import { releases, services } from "@/lib/dummy-data";
-import { AlertTriangle, GitBranch, Layers, Server } from "lucide-react";
 
 const desk = buildEnvironmentDesk(releases, services);
 
-export function EnvironmentDeskDashboardCard() {
-  const { stats, alerts } = desk;
-  const topAlert = alerts[0];
-
-  return (
-    <AdvancedCard
-      variant="glass"
-      icon={Server}
-      title="Environment Desk"
-      subtitle="Timeline · booking · versions · topology"
-      action={
-        <ProgressLink href="/environments" className="text-sm font-medium text-brand-600 hover:text-brand-700">
-          Open desk →
-        </ProgressLink>
-      }
-    >
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <StatChip label="Booked" value={stats.bookedEnvs} icon={Server} />
-        <StatChip label="Drift" value={stats.versionDrift} icon={Layers} warn={stats.versionDrift > 0} />
-        <StatChip label="Conflicts" value={stats.bookingConflicts} icon={GitBranch} warn={stats.bookingConflicts > 0} />
-        <StatChip label="Alerts" value={alerts.length} icon={AlertTriangle} warn={alerts.length > 0} />
-      </div>
-      {topAlert ? (
-        <p className="text-xs text-gray-600 border-t border-gray-100 pt-3">
-          <span className="font-semibold text-warning-700">Top priority:</span> {topAlert.title} — {topAlert.detail}
-        </p>
-      ) : (
-        <p className="text-xs text-success-700 border-t border-gray-100 pt-3">
-          All environment slots aligned — no drift or booking conflicts detected.
-        </p>
-      )}
-    </AdvancedCard>
-  );
-}
-
-function StatChip({
+function EnvStat({
   label,
   value,
   icon: Icon,
@@ -54,14 +25,73 @@ function StatChip({
   icon: typeof Server;
   warn?: boolean;
 }) {
+  const theme = useTheme();
+  const color = warn ? theme.palette.warning.main : theme.palette.primary.main;
+
   return (
-    <div
-      className={`rounded-xl border px-3 py-2 ${warn ? "border-warning-200 bg-warning-50/50" : "border-gray-100 bg-gray-50/50"}`}
+    <Box
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        border: 1,
+        borderColor: warn ? alpha(theme.palette.warning.main, 0.35) : "divider",
+        bgcolor: warn ? alpha(theme.palette.warning.main, 0.06) : alpha(theme.palette.primary.main, 0.04),
+      }}
     >
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-gray-500">
-        <Icon className="h-3 w-3" /> {label}
-      </div>
-      <p className="text-lg font-bold tabular-nums text-gray-800 mt-0.5">{value}</p>
-    </div>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+        <Icon size={14} color={color} />
+        <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.4 }}>
+          {label}
+        </Typography>
+      </Box>
+      <Typography variant="h5" sx={{ fontWeight: 700 }} color="text.primary">
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+export function EnvironmentDeskDashboardCard() {
+  const { stats, alerts } = desk;
+  const topAlert = alerts[0];
+
+  return (
+    <MaterioCard
+      title="Environment Desk"
+      subheader="Timeline · booking · versions · topology"
+      action={
+        <Button component={Link} href="/environments" size="small" sx={{ textTransform: "none" }}>
+          Open desk →
+        </Button>
+      }
+    >
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={6}>
+          <EnvStat label="Booked" value={stats.bookedEnvs} icon={Server} />
+        </Grid>
+        <Grid size={6}>
+          <EnvStat label="Drift" value={stats.versionDrift} icon={Layers} warn={stats.versionDrift > 0} />
+        </Grid>
+        <Grid size={6}>
+          <EnvStat label="Conflicts" value={stats.bookingConflicts} icon={GitBranch} warn={stats.bookingConflicts > 0} />
+        </Grid>
+        <Grid size={6}>
+          <EnvStat label="Alerts" value={alerts.length} icon={AlertTriangle} warn={alerts.length > 0} />
+        </Grid>
+      </Grid>
+
+      {topAlert ? (
+        <Box sx={{ pt: 2, borderTop: 1, borderColor: "divider" }}>
+          <Chip label="Top priority" size="small" color="warning" sx={{ mb: 1 }} />
+          <Typography variant="body2" color="text.secondary">
+            {topAlert.title} — {topAlert.detail}
+          </Typography>
+        </Box>
+      ) : (
+        <Typography variant="body2" sx={{ pt: 2, borderTop: 1, borderColor: "divider", color: "success.main" }}>
+          All environment slots aligned — no drift or booking conflicts detected.
+        </Typography>
+      )}
+    </MaterioCard>
   );
 }

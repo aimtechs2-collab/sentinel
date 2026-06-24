@@ -1,12 +1,27 @@
 "use client";
 
-import { ProgressLink } from "@/components/layout/NavigationProgress";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import Link from "next/link";
+import { MaterioCard } from "@/components/materio/crm/MaterioCard";
 import { SourceBadgeInline } from "@/components/dashboard/UnifiedPortfolioPanel";
-import { StatusBadge } from "@/components/badges/StatusBadge";
-import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
-import { formatDate, cn } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import type { NeedsAttentionItem } from "@/lib/needs-attention";
-import { AlertTriangle } from "lucide-react";
+
+function statusChipColor(status: string): "success" | "warning" | "error" | "default" {
+  const s = status.toLowerCase();
+  if (s.includes("block")) return "error";
+  if (s.includes("risk")) return "warning";
+  return "default";
+}
 
 export function NeedsAttentionPanel({
   items,
@@ -18,90 +33,92 @@ export function NeedsAttentionPanel({
   showViewAll?: boolean;
 }) {
   return (
-    <DataTable
+    <MaterioCard
       title="Needs attention"
-      subtitle={
+      subheader={
         items.length
           ? "Blocked and at-risk releases — owner, stage, and who should act next"
           : "No blocked or at-risk releases in this period and filter scope"
       }
-      icon={AlertTriangle}
       action={
         showViewAll && items.length > 0 ? (
-          <ProgressLink
-            href={viewAllHref}
-            className="text-xs font-medium text-brand-600 hover:text-brand-700"
-          >
+          <Button component={Link} href={viewAllHref} size="small" sx={{ textTransform: "none" }}>
             View all →
-          </ProgressLink>
+          </Button>
         ) : undefined
       }
+      noPadding
     >
       {items.length === 0 ? (
-        <p className="text-sm text-gray-500 px-1 py-2">
-          All clear for the selected period. Check{" "}
-          <ProgressLink href="/releases" className="text-brand-600 hover:underline">
-            Releases
-          </ProgressLink>{" "}
-          for the full portfolio.
-        </p>
+        <Box sx={{ px: 3, py: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            All clear for the selected period. Check{" "}
+            <Link href="/releases" style={{ color: "inherit", fontWeight: 600 }}>
+              Releases
+            </Link>{" "}
+            for the full portfolio.
+          </Typography>
+        </Box>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className={tableHeadRow}>
-              <th className={cn(tableCell, "text-left")}>Release</th>
-              <th className={cn(tableCell, "text-left")}>Status</th>
-              <th className={cn(tableCell, "text-left")}>Owner</th>
-              <th className={cn(tableCell, "text-left")}>Stage</th>
-              <th className={cn(tableCell, "text-left")}>Why stuck</th>
-              <th className={cn(tableCell, "text-left")}>Responsible</th>
-              <th className={cn(tableCell, "text-left")}>Last activity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={`${item.source}-${item.id}`} className={tableRow}>
-                <td className={tableCell}>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <SourceBadgeInline source={item.source} />
-                    <ProgressLink
-                      href={item.href}
-                      className="font-mono text-xs text-brand-600 hover:underline"
-                    >
-                      {item.code}
-                    </ProgressLink>
-                  </div>
-                  <ProgressLink href={item.href} className="text-gray-800 hover:text-brand-600 block mt-0.5">
-                    {item.name}
-                  </ProgressLink>
-                  <span className="text-[10px] text-gray-400">
-                    {item.group} · {formatDate(item.date)}
-                  </span>
-                </td>
-                <td className={tableCell}>
-                  <StatusBadge status={item.status as "Blocked"} />
-                </td>
-                <td className={cn(tableCell, "text-gray-700")}>{item.owner}</td>
-                <td className={cn(tableCell, "text-xs text-gray-600 max-w-[140px]")}>{item.stage}</td>
-                <td className={cn(tableCell, "text-xs text-gray-600 max-w-[180px]")}>{item.reason}</td>
-                <td className={cn(tableCell, "font-medium text-gray-800")}>{item.responsible}</td>
-                <td className={cn(tableCell, "text-xs text-gray-500 max-w-[160px]")}>
-                  {item.lastActor ? (
-                    <>
-                      <span className="text-gray-700">{item.lastActor}</span>
-                      {item.lastActivity && (
-                        <span className="block text-gray-400 mt-0.5">{item.lastActivity}</span>
-                      )}
-                    </>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <TableContainer sx={{ overflowX: "auto" }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Release</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Owner</TableCell>
+                <TableCell>Stage</TableCell>
+                <TableCell>Why stuck</TableCell>
+                <TableCell>Responsible</TableCell>
+                <TableCell>Last activity</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={`${item.source}-${item.id}`} hover sx={{ "&:last-child td": { border: 0 } }}>
+                  <TableCell sx={{ minWidth: 180 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.5 }}>
+                      <SourceBadgeInline source={item.source} />
+                      <Link href={item.href} style={{ fontFamily: "monospace", fontSize: "0.75rem", fontWeight: 600 }}>
+                        {item.code}
+                      </Link>
+                    </Box>
+                    <Link href={item.href} style={{ textDecoration: "none", color: "inherit", fontWeight: 500 }}>
+                      {item.name}
+                    </Link>
+                    <Typography variant="caption" color="text.disabled" sx={{ display: "block" }}>
+                      {item.group} · {formatDate(item.date)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={item.status} size="small" color={statusChipColor(item.status)} variant="outlined" />
+                  </TableCell>
+                  <TableCell>{item.owner}</TableCell>
+                  <TableCell sx={{ maxWidth: 140 }}>
+                    <Typography variant="body2" color="text.secondary">{item.stage}</Typography>
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 180 }}>
+                    <Typography variant="body2" color="text.secondary">{item.reason}</Typography>
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{item.responsible}</TableCell>
+                  <TableCell sx={{ maxWidth: 160 }}>
+                    {item.lastActor ? (
+                      <>
+                        <Typography variant="body2">{item.lastActor}</Typography>
+                        {item.lastActivity && (
+                          <Typography variant="caption" color="text.disabled">{item.lastActivity}</Typography>
+                        )}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </DataTable>
+    </MaterioCard>
   );
 }

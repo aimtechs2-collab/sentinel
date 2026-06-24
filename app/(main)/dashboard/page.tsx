@@ -2,19 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
+import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Fade from "@mui/material/Fade";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
-import { AlertTriangle, Inbox, RefreshCw } from "lucide-react";
+import { AlertTriangle, Calendar, CheckCircle2, Flag, Inbox, Package, RefreshCw } from "lucide-react";
 import { EnvironmentDeskDashboardCard } from "@/components/environments/EnvironmentDeskDashboardCard";
 import { NeedsAttentionPanel } from "@/components/dashboard/NeedsAttentionPanel";
 import { DashboardChartsSection } from "@/components/dashboard/DashboardChartsSection";
 import { DashboardP1Panel } from "@/components/dashboard/DashboardP1Panel";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { FilteredReleasesTable } from "@/components/dashboard/FilteredReleasesTable";
-import { ReleaseStatusTiles, type ReleaseStatusCounts } from "@/components/dashboard/ReleaseStatusTiles";
 import { ReleaseFiltersBar } from "@/components/releases/ReleaseFiltersBar";
+import { CrmStatCard } from "@/components/materio/crm/CrmStatCard";
+import { MaterioCard } from "@/components/materio/crm/MaterioCard";
 import { AIPanel } from "@/components/ui/ai-panel";
 import { callAgent } from "@/lib/agent-client";
 import { buildDashboardSummaryContext } from "@/lib/summary-context";
@@ -26,7 +28,17 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import type { Period } from "@/lib/period-range";
 import type { ScheduleItem } from "@/components/materio/crm/MeetingScheduleList";
 import type { ActivityItem } from "@/components/materio/crm/ActivityFeedCard";
+import { buildSparkline, pctChange } from "@/lib/materio/chart-data";
+
 import { PRODUCT_TAGLINE } from "@/lib/brand";
+
+type ReleaseStatusCounts = {
+  planned: number;
+  blocked: number;
+  shipped: number;
+  atRisk: number;
+  inProgress: number;
+};
 
 type DashboardData = {
   counts: { planned: number; inProgress: number; blocked: number; atRisk: number; shipped: number };
@@ -206,6 +218,37 @@ export default function DashboardPage() {
     return { planned: 0, blocked: 0, shipped: 0, atRisk: 0, inProgress: 0 };
   }, [overview, data]);
 
+  const spark = useMemo(() => buildSparkline(overview?.releases ?? []), [overview?.releases]);
+  const plannedTrend = useMemo(() => {
+    const releases = overview?.releases ?? [];
+    const now = new Date();
+    const thisMonth = releases.filter((r) => {
+      const raw = r.date;
+      if (!raw) return false;
+      const d = new Date(raw);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    const prevMonth = releases.filter((r) => {
+      const raw = r.date;
+      if (!raw) return false;
+      const d = new Date(raw);
+      const pm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return d.getMonth() === pm.getMonth() && d.getFullYear() === pm.getFullYear();
+    }).length;
+    return pctChange(thisMonth, prevMonth);
+  }, [overview?.releases]);
+
+  const statCards = useMemo(
+    () => [
+      { title: "Planned", value: statusCounts.planned, icon: Calendar, color: "primary" as const, trend: plannedTrend, sparkline: spark },
+      { title: "In progress", value: statusCounts.inProgress, icon: Package, color: "info" as const },
+      { title: "Blocked", value: statusCounts.blocked, icon: AlertTriangle, color: "error" as const },
+      { title: "At risk", value: statusCounts.atRisk, icon: Flag, color: "warning" as const },
+      { title: "Shipped", value: statusCounts.shipped, icon: CheckCircle2, color: "success" as const },
+    ],
+    [statusCounts, plannedTrend, spark]
+  );
+
   const scheduleItems: ScheduleItem[] = useMemo(
     () =>
       attention.slice(0, 5).map((a) => ({
@@ -288,31 +331,16 @@ export default function DashboardPage() {
       </Box>
 
       {fetchError && (
-        <Box
-          role="alert"
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 2,
-            p: 2,
-            borderRadius: 2,
-            border: 1,
-            borderColor: "error.light",
-            bgcolor: "error.50",
-          }}
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={reload} sx={{ textTransform: "none" }}>
+              Try again
+            </Button>
+          }
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <AlertTriangle size={18} className="text-error-600 shrink-0" />
-            <Typography variant="body2" color="error.dark">
-              {fetchError}
-            </Typography>
-          </Box>
-          <Button size="small" variant="contained" color="error" onClick={reload} sx={{ textTransform: "none" }}>
-            Try again
-          </Button>
-        </Box>
+          {fetchError}
+        </Alert>
       )}
 
       <AIPanel
@@ -320,9 +348,8 @@ export default function DashboardPage() {
         agent="Summary Agent"
         loading={summaryLoading && !fetchError}
         error={summaryError}
-        variant="soft"
       >
-        {summary && <p>{summary}</p>}
+        {summary}
       </AIPanel>
 
       <Grid container spacing={3}>
@@ -347,11 +374,27 @@ export default function DashboardPage() {
         <Box>
           {data && (
             <>
-              <ReleaseStatusTiles
-                counts={statusCounts}
-                heading={snapshotHeading(period)}
-                onTileClick={scrollToReleases}
-              />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2.5 }} color="text.primary">
+                  {snapshotHeading(period)}
+                </Typography>
+                <Grid container spacing={3} columns={{ xs: 12, sm: 12, md: 12, lg: 10 }}>
+                  {statCards.map((s) => (
+                    <Grid key={s.title} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                      <Box onClick={scrollToReleases} sx={{ cursor: "pointer", height: "100%" }}>
+                        <CrmStatCard
+                          title={s.title}
+                          value={s.value}
+                          icon={s.icon}
+                          color={s.color}
+                          trend={s.trend}
+                          sparkline={s.sparkline}
+                        />
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
 
               <Box sx={{ mt: 3 }}>
                 <DashboardChartsSection
@@ -362,10 +405,11 @@ export default function DashboardPage() {
                   upgradeDescription={upgradeCard.description}
                   upgradeCtaLabel={upgradeCard.ctaLabel}
                   upgradeCtaHref={upgradeCard.ctaHref}
+                  reportHref="#dashboard-releases"
                 />
               </Box>
 
-              <Box ref={releasesRef} sx={{ mt: 3, scrollMarginTop: 24 }}>
+              <Box id="dashboard-releases" ref={releasesRef} sx={{ mt: 3, scrollMarginTop: 24 }}>
                 {overview && <FilteredReleasesTable releases={overview.releases} />}
               </Box>
             </>
@@ -374,28 +418,17 @@ export default function DashboardPage() {
       </Fade>
 
       {!data && !loading && !fetchError && (
-        <Box
-          sx={{
-            textAlign: "center",
-            py: 6,
-            px: 3,
-            borderRadius: 2,
-            border: 1,
-            borderColor: "divider",
-            bgcolor: "background.paper",
-          }}
-        >
-          <Inbox size={32} className="mx-auto mb-3 text-gray-300" />
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-            No dashboard data
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Adjust filters or refresh to load portfolio metrics.
-          </Typography>
-          <Button variant="contained" onClick={reload} startIcon={<RefreshCw size={16} />} sx={{ textTransform: "none" }}>
-            Refresh dashboard
-          </Button>
-        </Box>
+        <MaterioCard title="No dashboard data">
+          <Box sx={{ textAlign: "center", py: 3 }}>
+            <Inbox size={32} className="mx-auto mb-3 text-gray-300" />
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Adjust filters or refresh to load portfolio metrics.
+            </Typography>
+            <Button variant="contained" onClick={reload} startIcon={<RefreshCw size={16} />} sx={{ textTransform: "none" }}>
+              Refresh dashboard
+            </Button>
+          </Box>
+        </MaterioCard>
       )}
     </Box>
   );

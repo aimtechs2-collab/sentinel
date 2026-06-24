@@ -1,10 +1,11 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Skeleton from "@mui/material/Skeleton";
+import Typography from "@mui/material/Typography";
 import { AgentBadge } from "@/components/badges/AgentBadge";
-import { AICardSkeleton } from "@/components/ui/AISkeleton";
-import { MagicCard } from "@/components/ui/magic-card";
+import { MaterioCard } from "@/components/materio/crm/MaterioCard";
 import type { AgentRole } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 interface AIPanelProps {
   title: string;
@@ -12,63 +13,41 @@ interface AIPanelProps {
   children?: React.ReactNode;
   loading?: boolean;
   error?: string | null;
-  className?: string;
-  /** Soft Materio card (default) vs animated gradient border */
-  variant?: "soft" | "magic";
 }
 
-function PanelBody({
-  title,
-  agent,
-  children,
-  loading,
-  error,
-}: Pick<AIPanelProps, "title" | "agent" | "children" | "loading" | "error">) {
+function PanelSkeleton() {
   return (
-    <>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="font-semibold text-gray-800">{title}</h2>
-        <AgentBadge agent={agent} />
-      </div>
-      {loading && <AICardSkeleton />}
-      {error && !loading && <p className="text-sm text-error-600">{error}</p>}
-      {children && !loading && (
-        <div className={cn(!error && "text-sm leading-relaxed text-gray-600")}>{children}</div>
-      )}
-    </>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+      {[100, 92, 78, 65].map((w) => (
+        <Skeleton key={w} variant="rounded" height={14} width={`${w}%`} sx={{ bgcolor: "action.hover" }} />
+      ))}
+    </Box>
   );
 }
 
-export function AIPanel({
-  title,
-  agent,
-  children,
-  loading,
-  error,
-  className,
-  variant = "soft",
-}: AIPanelProps) {
-  if (variant === "magic") {
-    return (
-      <MagicCard
-        gradient="from-brand-400 via-brand-500 to-brand-600"
-        beam
-        glow
-        className={className}
-        innerClassName="p-5 md:p-6"
-      >
-        <PanelBody title={title} agent={agent} loading={loading} error={error}>
-          {children}
-        </PanelBody>
-      </MagicCard>
-    );
-  }
-
+export function AIPanel({ title, agent, children, loading, error }: AIPanelProps) {
   return (
-    <div className={cn("ta-card ai-card", className)}>
-      <PanelBody title={title} agent={agent} loading={loading} error={error}>
-        {children}
-      </PanelBody>
-    </div>
+    <MaterioCard
+      title={title}
+      action={<AgentBadge agent={agent} />}
+      sx={{
+        borderLeft: 4,
+        borderLeftColor: "primary.main",
+        bgcolor: (theme) =>
+          theme.palette.mode === "dark" ? "background.paper" : "rgba(145, 85, 253, 0.04)",
+      }}
+    >
+      {loading && <PanelSkeleton />}
+      {error && !loading && (
+        <Typography variant="body2" color="error.main">
+          {error}
+        </Typography>
+      )}
+      {children && !loading && (
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+          {children}
+        </Typography>
+      )}
+    </MaterioCard>
   );
 }
