@@ -50,6 +50,18 @@ Flagship demo prototype for stakeholder screen recordings. Static dummy data wit
 
 See **[WORKFLOW.md](./WORKFLOW.md)** for step-by-step Release Desk workflow (reference data → releases → booking → mapping → dashboard). A Word copy is available as **[WORKFLOW.docx](./WORKFLOW.docx)**.
 
+### Deploy to Vercel
+
+The build seeds `prisma/dev.db` automatically and bundles it for serverless API routes.
+
+1. Connect the GitHub repo in Vercel (framework preset: **Next.js**).
+2. Add environment variables in the Vercel project:
+   - `OPENAI_API_KEY` (optional — AI summaries fall back to static text without it)
+   - `ANTHROPIC_API_KEY` (optional fallback)
+3. Deploy — no manual `db:setup` needed; `npm run build` runs `prisma db push` + seed.
+
+**Note:** SQLite on Vercel is suitable for **read-heavy demos**. Edits made in production may not persist across cold starts. For persistent production data, migrate to [Turso](https://turso.tech) or Vercel Postgres.
+
 ## Pages
 
 | Route | Description |
