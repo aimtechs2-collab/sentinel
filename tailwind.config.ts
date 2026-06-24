@@ -23,7 +23,7 @@ const config: Config = {
         border: palette.border,
       },
       fontFamily: {
-        sans: ["var(--font-outfit)", "system-ui", "sans-serif"],
+        sans: ["var(--font-public-sans)", "var(--font-outfit)", "system-ui", "sans-serif"],
       },
       fontSize: {
         "title-sm": ["1.875rem", { lineHeight: "2.375rem" }],
@@ -31,8 +31,12 @@ const config: Config = {
         "theme-xs": ["0.75rem", { lineHeight: "1.125rem" }],
       },
       boxShadow: {
-        "theme-sm": "0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06)",
-        "theme-md": "0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)",
+        "theme-sm": "0px 2px 6px 0px rgba(46, 38, 61, 0.08)",
+        "theme-md": "0px 4px 16px 0px rgba(46, 38, 61, 0.1)",
+        materio: "0px 2px 10px 0px rgba(46, 38, 61, 0.06)",
+      },
+      borderRadius: {
+        materio: "0.5rem",
       },
       animation: {
         shimmer: "shimmer 1.5s infinite",

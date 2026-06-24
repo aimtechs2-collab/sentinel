@@ -40,7 +40,7 @@ export function NewUserWelcomeModal() {
       aria-labelledby="welcome-title"
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-100 bg-gradient-to-br from-brand-50 to-violet-50/50">
+        <div className="p-6 border-b border-gray-100 bg-brand-50/80">
           <h2 id="welcome-title" className="text-lg font-bold text-gray-900">
             Welcome to Sentinel
           </h2>

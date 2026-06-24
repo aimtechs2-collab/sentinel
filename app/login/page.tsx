@@ -42,12 +42,12 @@ function LoginForm() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-white via-brand-50/30 to-violet-50/40 lg:flex-row overflow-hidden">
+    <div className="relative flex min-h-screen flex-col bg-gray-50 lg:flex-row overflow-hidden">
       <DotPattern className="opacity-20" />
       <div className="relative flex flex-1 flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto w-full max-w-md">
           <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 shadow-theme-md">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-500 shadow-theme-md">
               <Shield className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -59,7 +59,7 @@ function LoginForm() {
           <p className="mb-8 text-sm text-gray-500">
             Demo SSO — select IAM role group. Use <strong>priya@company.com</strong> for Morning Inbox “My releases”.
           </p>
-          <MagicCard gradient="from-brand-200/50 via-white to-violet-200/50" innerClassName="p-6">
+          <MagicCard gradient="from-brand-200/50 via-white to-brand-100/50" innerClassName="p-6">
             <form onSubmit={signIn} className="space-y-5">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">Work email</label>
@@ -90,10 +90,10 @@ function LoginForm() {
           <LoginHelpCard />
         </motion.div>
       </div>
-      <div className="relative hidden flex-1 items-center justify-center bg-gradient-to-br from-brand-950 via-brand-900 to-violet-950 lg:flex">
+      <div className="relative hidden flex-1 items-center justify-center bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 lg:flex">
         <div className="max-w-md px-12 text-center text-white">
           <h2 className="text-2xl font-bold">Release Desk MVP</h2>
-          <p className="mt-3 text-sm text-gray-400">
+          <p className="mt-3 text-sm text-brand-100/90">
             Reference data, env booking, system mapping, and role-based access — backed by SQLite for this build.
           </p>
         </div>

@@ -47,8 +47,8 @@ export function ForecastChart({ data }: { data: ForecastTrendPoint[] }) {
             yAxisId="left"
             type="monotone"
             dataKey="actualReadiness"
-            fill="#465fff15"
-            stroke="#465fff"
+            fill="#9155fd15"
+            stroke="#9155fd"
             name="Actual readiness %"
             connectNulls={false}
           />

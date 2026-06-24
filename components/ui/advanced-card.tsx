@@ -8,8 +8,8 @@ type Variant = "default" | "ai" | "glass" | "plain";
 
 const GRADIENTS: Record<Exclude<Variant, "plain">, string> = {
   default: "from-gray-200/80 via-white to-gray-200/80",
-  ai: "from-violet-500 via-brand-500 to-cyan-400",
-  glass: "from-brand-300/40 via-violet-300/30 to-cyan-300/40",
+  ai: "from-brand-400 via-brand-500 to-brand-600",
+  glass: "from-brand-200/30 via-white to-brand-100/40",
 };
 
 interface AdvancedCardProps {
@@ -43,8 +43,8 @@ export function AdvancedCard({
     <div className={cn("flex items-start justify-between gap-3", !noPadding && "mb-4")}>
       <div className="flex items-start gap-2.5 min-w-0">
         {Icon && (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-violet-50">
-            <Icon className="h-4 w-4 text-brand-600" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50">
+            <Icon className="h-4 w-4 text-brand-500" />
           </div>
         )}
         <div className="min-w-0">

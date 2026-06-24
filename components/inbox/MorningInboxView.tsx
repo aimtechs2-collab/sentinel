@@ -7,7 +7,7 @@ import { SourceBadgeInline } from "@/components/dashboard/UnifiedPortfolioPanel"
 import { TopBar } from "@/components/layout/TopBar";
 import { ReleaseFiltersBar } from "@/components/releases/ReleaseFiltersBar";
 import { TopActionsToday } from "@/components/inbox/TopActionsToday";
-import { MetricCard } from "@/components/ui/metric-card";
+import { InboxCrmWidgets } from "@/components/inbox/InboxCrmWidgets";
 import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
 import { filterLabel } from "@/lib/release-filters";
 import {
@@ -22,7 +22,6 @@ import {
   AlertTriangle,
   CalendarClock,
   GitBranch,
-  Inbox,
   Package,
   Ticket,
   User,
@@ -136,29 +135,14 @@ export function MorningInboxView() {
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Total items"
-          value={loading ? "…" : String(totalCount)}
-          icon={Inbox}
-        />
-        <MetricCard
-          label="Blocked & at risk"
-          value={loading ? "…" : String(attentionCount)}
-          icon={AlertTriangle}
-          trend={attentionCount ? "down" : "neutral"}
-        />
-        <MetricCard
-          label="Open P1s"
-          value={loading ? "…" : String(data?.counts.p1 ?? 0)}
-          icon={Ticket}
-        />
-        <MetricCard
-          label="Mapping conflicts"
-          value={loading ? "…" : String(data?.counts.mapping ?? 0)}
-          icon={GitBranch}
-        />
-      </div>
+      <InboxCrmWidgets
+        loading={loading}
+        totalCount={totalCount}
+        attentionCount={attentionCount}
+        p1Count={data?.counts.p1 ?? 0}
+        mappingCount={data?.counts.mapping ?? 0}
+        items={data?.items ?? []}
+      />
 
       <div className="flex flex-wrap gap-2">
         {SECTION_FILTERS.map((f) => {

@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { NotificationPanel } from "@/components/layout/NotificationPanel";
 import { HelpCenterModal } from "@/components/help/HelpCenterModal";
+import { ThemeModeToggle } from "@/components/materio/ThemeModeToggle";
 import { useReleaseStore } from "@/context/ReleaseStoreContext";
 
 export function AppHeader() {
@@ -34,13 +35,13 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex w-full border-b border-gray-200/80 bg-white/80 backdrop-blur-xl">
+      <header className="materio-header sticky top-0 z-30 flex w-full border-b border-[var(--border)] bg-[var(--header)] shadow-theme-sm">
         <div className="flex grow flex-col items-center justify-between lg:flex-row lg:px-6">
           <div className="flex w-full items-center justify-between gap-2 border-b border-gray-200 px-3 py-3 sm:gap-4 lg:border-b-0 lg:px-0 lg:py-4">
             <button
               type="button"
               onClick={handleToggle}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200/80 bg-white/60 text-gray-500 shadow-theme-sm backdrop-blur-sm hover:bg-brand-50 hover:text-brand-600 lg:h-11 lg:w-11 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-theme-sm hover:bg-brand-50 hover:text-brand-600 lg:h-11 lg:w-11 transition-colors"
               aria-label="Toggle sidebar"
             >
               <Menu className="h-5 w-5" />
@@ -52,7 +53,7 @@ export function AppHeader() {
               className="hidden flex-1 max-w-md lg:flex items-center relative text-left"
             >
               <Search className="absolute left-3 h-4 w-4 text-gray-400" />
-              <span className="h-11 w-full rounded-xl border border-gray-200/80 bg-white/60 pl-10 pr-4 text-sm text-gray-400 flex items-center shadow-theme-sm backdrop-blur-sm">
+              <span className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-sm text-gray-500 flex items-center shadow-theme-sm">
                 Search releases, tickets, CRs...
               </span>
               <kbd className="absolute right-3 hidden -translate-y-0 sm:inline rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-400">
@@ -70,6 +71,7 @@ export function AppHeader() {
             </button>
 
             <div className="flex items-center gap-3">
+              <ThemeModeToggle />
               <button
                 type="button"
                 onClick={() => setHelpOpen(true)}

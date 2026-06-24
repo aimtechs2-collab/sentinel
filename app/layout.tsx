@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Outfit, Public_Sans } from "next/font/google";
 import { NavigationProgressProvider } from "@/components/layout/NavigationProgress";
+import { MuiThemeProvider } from "@/components/providers/MuiThemeProvider";
 import "./globals.css";
+
+const publicSans = Public_Sans({
+  subsets: ["latin"],
+  variable: "--font-public-sans",
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
@@ -12,9 +19,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${outfit.variable} font-sans antialiased`}>
-        <NavigationProgressProvider>{children}</NavigationProgressProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${publicSans.variable} ${outfit.variable} font-sans antialiased`}>
+        <MuiThemeProvider>
+          <NavigationProgressProvider>{children}</NavigationProgressProvider>
+        </MuiThemeProvider>
       </body>
     </html>
   );

@@ -20,7 +20,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <ChatProvider>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-brand-50/30 xl:flex">
+      <div className="min-h-screen materio-page-bg xl:flex">
         <Sidebar />
         <Backdrop />
         <div className={cn("flex flex-1 flex-col transition-all duration-300 ease-in-out", margin)}>

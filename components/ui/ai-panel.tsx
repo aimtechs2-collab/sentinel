@@ -18,7 +18,7 @@ interface AIPanelProps {
 export function AIPanel({ title, agent, children, loading, error, className }: AIPanelProps) {
   return (
     <MagicCard
-      gradient="from-violet-500 via-brand-500 to-cyan-400"
+      gradient="from-brand-400 via-brand-500 to-brand-600"
       beam
       glow
       className={className}

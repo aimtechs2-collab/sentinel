@@ -17,16 +17,16 @@ export function MagicCard({
   children,
   className,
   innerClassName,
-  gradient = "from-violet-500 via-brand-500 to-cyan-400",
+  gradient = "from-brand-400 via-brand-500 to-brand-600",
   beam = false,
   glow = false,
 }: MagicCardProps) {
   return (
     <div
       className={cn(
-        "relative rounded-2xl p-[1px] bg-gradient-to-br shadow-theme-md transition-shadow hover:shadow-theme-md",
+        "relative rounded-lg p-[1px] bg-gradient-to-br shadow-theme-md transition-shadow hover:shadow-theme-md",
         gradient,
-        glow && "shadow-[0_0_40px_-12px_rgba(122,90,248,0.45)]",
+        glow && "shadow-[0_0_40px_-12px_rgba(145,85,253,0.35)]",
         className
       )}
     >

@@ -21,17 +21,17 @@ export function TopBar({ title, subtitle, positioning, highlight = false, badge,
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "relative mb-6 overflow-hidden rounded-2xl border border-gray-100/80 bg-white/70 p-5 shadow-theme-sm backdrop-blur-md md:p-6",
+        "relative mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white p-5 shadow-theme-sm md:p-6",
         className
       )}
     >
-      <DotPattern className="opacity-[0.25]" />
+      <DotPattern className="opacity-[0.15]" />
       <div className="relative flex flex-wrap items-start justify-between gap-3">
         <div>
           {highlight ? (
             <ShimmerText className="text-title-sm font-bold">{title}</ShimmerText>
           ) : (
-            <h1 className="text-title-sm font-bold text-gray-800">{title}</h1>
+            <h1 className="text-title-sm font-bold text-gray-900">{title}</h1>
           )}
           {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
           {positioning && (

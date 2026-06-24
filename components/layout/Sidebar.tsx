@@ -17,7 +17,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed top-0 left-0 z-50 flex h-screen flex-col border-r border-gray-200/80 bg-white/95 px-5 shadow-theme-sm backdrop-blur-xl transition-all duration-300 ease-in-out lg:mt-0",
+        "materio-sidebar fixed top-0 left-0 z-50 flex h-screen flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-5 shadow-theme-sm transition-all duration-300 ease-in-out lg:mt-0",
         wide ? "w-[290px]" : "w-[90px]",
         isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}
@@ -26,13 +26,13 @@ export function Sidebar() {
     >
       <div className={cn("flex py-8", !wide ? "lg:justify-center" : "justify-start")}>
         <ProgressLink href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 shadow-theme-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-500 shadow-theme-sm">
             <Shield className="h-5 w-5 text-white" />
           </div>
           {wide && (
             <div>
-              <span className="text-xl font-bold text-gray-800 tracking-tight">Sentinel</span>
-              <p className="mt-0.5 text-[11px] leading-snug text-gray-400">{PRODUCT_TAGLINE}</p>
+              <span className="text-xl font-bold text-gray-900 tracking-tight">Sentinel</span>
+              <p className="mt-0.5 text-[11px] leading-snug text-gray-500">{PRODUCT_TAGLINE}</p>
             </div>
           )}
         </ProgressLink>
@@ -85,13 +85,13 @@ export function Sidebar() {
         <div className="border-t border-gray-200 py-4">
           <ProgressLink
             href="/templates"
-            className="block rounded-2xl bg-brand-950 px-4 py-4 transition hover:bg-brand-900"
+            className="block rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 px-4 py-4 transition hover:from-brand-600 hover:to-brand-700 shadow-theme-sm"
           >
             <p className="text-sm font-semibold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-brand-300" />
+              <Sparkles className="w-4 h-4 text-brand-100" />
               Templates
             </p>
-            <p className="mt-1 text-xs text-gray-400">{QUICK_START_TEMPLATES.length} guided demo scenarios</p>
+            <p className="mt-1 text-xs text-brand-100/90">{QUICK_START_TEMPLATES.length} guided demo scenarios</p>
           </ProgressLink>
         </div>
       )}

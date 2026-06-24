@@ -23,12 +23,12 @@ export function MetricCard({ label, value, icon: Icon, delay = 0, trend, classNa
       className={className}
     >
       <MagicCard
-        gradient="from-brand-400/30 via-violet-400/20 to-cyan-400/30"
+        gradient="from-brand-300/30 via-brand-200/20 to-brand-100/30"
         className="h-full group hover:shadow-theme-md transition-shadow"
       >
         <div className="p-5 md:p-6">
           <div className="flex items-start justify-between">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 via-violet-50 to-cyan-50 ring-1 ring-white/80 shadow-theme-sm group-hover:scale-105 transition-transform">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-brand-100 shadow-theme-sm group-hover:scale-105 transition-transform">
               <Icon className="h-6 w-6 text-brand-600" />
             </div>
             {trend && (

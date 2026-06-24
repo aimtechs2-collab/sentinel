@@ -39,8 +39,7 @@ export function PageHelpBanner() {
   return (
     <div
       className={cn(
-        "mb-6 rounded-2xl border border-brand-200/80 bg-gradient-to-r from-brand-50/90 via-white/90 to-violet-50/60",
-        "shadow-theme-sm backdrop-blur-sm overflow-hidden"
+        "mb-6 rounded-lg border border-brand-200 bg-brand-50/80 shadow-theme-sm overflow-hidden"
       )}
       role="region"
       aria-label={`Help: ${guide.title}`}

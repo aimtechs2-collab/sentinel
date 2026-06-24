@@ -3,19 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { EnvironmentDeskDashboardCard } from "@/components/environments/EnvironmentDeskDashboardCard";
 import { NeedsAttentionPanel } from "@/components/dashboard/NeedsAttentionPanel";
+import { CrmPortfolioDashboard } from "@/components/dashboard/CrmPortfolioDashboard";
 import { UnifiedPortfolioPanel } from "@/components/dashboard/UnifiedPortfolioPanel";
 import { TopBar } from "@/components/layout/TopBar";
 import { ReleaseFiltersBar } from "@/components/releases/ReleaseFiltersBar";
 import { AIPanel } from "@/components/ui/ai-panel";
-import { MetricCard } from "@/components/ui/metric-card";
-import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
 import { callAgent } from "@/lib/agent-client";
 import { buildDashboardSummaryContext } from "@/lib/summary-context";
 import { filterLabel } from "@/lib/release-filters";
 import type { NeedsAttentionItem } from "@/lib/needs-attention";
 import { useReleaseFilters } from "@/context/ReleaseFiltersContext";
 import { formatDateTime, cn } from "@/lib/utils";
-import { AlertTriangle, Calendar, Clock, Flag, Package } from "lucide-react";
+import { Clock } from "lucide-react";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
 
 type Period = "month" | "quarter" | "year";
@@ -165,19 +164,6 @@ export default function DashboardPage() {
     };
   }, [data, overview, period, scopeLabel]);
 
-  const metrics = useMemo(
-    () =>
-      data
-        ? [
-            { label: "Planned", value: data.counts.planned, icon: Calendar },
-            { label: "In progress", value: data.counts.inProgress, icon: Package },
-            { label: "Blocked", value: data.counts.blocked, icon: AlertTriangle },
-            { label: "At risk", value: data.counts.atRisk, icon: Flag },
-          ]
-        : [],
-    [data]
-  );
-
   return (
     <div className="space-y-6">
       <TopBar
@@ -226,11 +212,15 @@ export default function DashboardPage() {
         {summary && <p>{summary}</p>}
       </AIPanel>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {metrics.map(({ label, value, icon }, i) => (
-          <MetricCard key={label} label={label} value={value} icon={icon} delay={i * 0.05} />
-        ))}
-      </div>
+      {data && (
+        <CrmPortfolioDashboard
+          counts={data.counts}
+          overviewReleases={overview?.releases ?? []}
+          attention={attention}
+          p1Issues={data.p1Issues}
+          connectors={data.connectors}
+        />
+      )}
 
       <NeedsAttentionPanel
         items={attention.slice(0, 8)}
@@ -240,31 +230,6 @@ export default function DashboardPage() {
       {overview && <UnifiedPortfolioPanel data={overview} />}
 
       <EnvironmentDeskDashboardCard />
-
-      <DataTable title="P1 Issues" subtitle="May require hotfix — release manager attention" icon={AlertTriangle}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className={tableHeadRow}>
-              <th className={cn(tableCell, "text-left")}>ID</th>
-              <th className={cn(tableCell, "text-left")}>Title</th>
-              <th className={cn(tableCell, "text-left")}>Application</th>
-              <th className={cn(tableCell, "text-left")}>Release</th>
-              <th className={cn(tableCell, "text-left")}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(data?.p1Issues ?? []).map((issue) => (
-              <tr key={issue.externalId} className={tableRow}>
-                <td className={cn(tableCell, "font-mono text-xs")}>{issue.externalId}</td>
-                <td className={tableCell}>{issue.title}</td>
-                <td className={tableCell}>{issue.application ?? "—"}</td>
-                <td className={tableCell}>{issue.releaseCode ?? "—"}</td>
-                <td className={tableCell}>{issue.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </DataTable>
     </div>
   );
 }
