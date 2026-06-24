@@ -6,6 +6,7 @@ import {
   getDbBlockers,
   getDbNextActions,
 } from "@/lib/db-release-command";
+import { predictDbRelease } from "@/lib/db-predictive";
 import { prisma } from "@/lib/prisma";
 
 const releaseInclude = {
@@ -34,6 +35,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const readiness = calcDbReadiness(release, p1Issues);
   const stages = computeDbLifecycleStages(release, p1Issues);
   const nextActions = getDbNextActions(release, blockers);
+  const prediction = predictDbRelease(release, p1Issues);
 
   return NextResponse.json({
     readiness,
@@ -41,5 +43,6 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     stages,
     nextActions,
     p1Issues,
+    prediction,
   });
 }

@@ -11,6 +11,7 @@ import { MagicCard } from "@/components/ui/magic-card";
 import { taBtnPrimary, taInput } from "@/lib/styles";
 import { PRODUCT_TAGLINE } from "@/lib/brand";
 import { ROLE_LABELS, type UserRole } from "@/lib/auth/roles";
+import { LoginHelpCard } from "@/components/help/LoginHelpCard";
 
 export default function LoginPage() {
   return (
@@ -86,6 +87,7 @@ function LoginForm() {
               </button>
             </form>
           </MagicCard>
+          <LoginHelpCard />
         </motion.div>
       </div>
       <div className="relative hidden flex-1 items-center justify-center bg-gradient-to-br from-brand-950 via-brand-900 to-violet-950 lg:flex">

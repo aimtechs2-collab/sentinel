@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/api";
+import { parseNlSearch } from "@/lib/nl-search";
 import { prisma } from "@/lib/prisma";
 import { dbReleaseToSearchResult, demoReleaseMatchesQuery } from "@/lib/unified-releases";
 import { releases as demoReleases } from "@/lib/dummy-data";
@@ -10,10 +11,13 @@ export async function GET(req: Request) {
   if (error) return error;
 
   const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
-  if (!q) return NextResponse.json({ results: [] });
+  if (!q) return NextResponse.json({ results: [], interpreted: null });
+
+  const departments = await prisma.department.findMany();
+  const nl = parseNlSearch(q, departments);
 
   const lower = q.toLowerCase();
-  const results: SearchResult[] = [];
+  const results: SearchResult[] = [...nl.extraResults];
 
   const dbReleases = await prisma.release.findMany({
     where: {
@@ -28,6 +32,27 @@ export async function GET(req: Request) {
     take: 8,
   });
   dbReleases.forEach((r) => results.push(dbReleaseToSearchResult(r)));
+
+  const dept = departments.find((d) => lower.includes(d.name.toLowerCase()));
+  if (dept && (lower.includes("blocked") || lower.includes("at risk") || lower.includes("release"))) {
+    const deptReleases = await prisma.release.findMany({
+      where: {
+        departmentId: dept.id,
+        ...(lower.includes("blocked")
+          ? { status: "Blocked" }
+          : lower.includes("at risk")
+            ? { status: "At Risk" }
+            : {}),
+      },
+      include: { department: true },
+      take: 6,
+    });
+    deptReleases.forEach((r) => {
+      if (!results.some((x) => x.href === `/releases/${r.id}`)) {
+        results.push(dbReleaseToSearchResult(r));
+      }
+    });
+  }
 
   const apps = await prisma.application.findMany({
     where: { OR: [{ name: { contains: q } }, { type: { contains: q } }] },
@@ -78,11 +103,15 @@ export async function GET(req: Request) {
   }
 
   const seen = new Set<string>();
+  const merged = results.filter((r) => {
+    if (seen.has(r.href + r.label)) return false;
+    seen.add(r.href + r.label);
+    return true;
+  }).slice(0, 14);
+
   return NextResponse.json({
-    results: results.filter((r) => {
-      if (seen.has(r.href + r.label)) return false;
-      seen.add(r.href + r.label);
-      return true;
-    }).slice(0, 14),
+    results: merged,
+    interpreted: nl.interpreted !== `Keyword search for “${q}”` ? nl.interpreted : null,
+    redirectHref: nl.redirectHref ?? null,
   });
 }

@@ -21,6 +21,8 @@ const icons = {
 export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState("");
   const [apiResults, setApiResults] = useState<SearchResult[]>([]);
+  const [interpreted, setInterpreted] = useState<string | null>(null);
+  const [redirectHref, setRedirectHref] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -31,6 +33,8 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
     if (open) {
       setQuery("");
       setApiResults([]);
+      setInterpreted(null);
+      setRedirectHref(null);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
@@ -48,12 +52,18 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
     const q = query.trim();
     if (q.length < 2) {
       setApiResults([]);
+      setInterpreted(null);
+      setRedirectHref(null);
       return;
     }
     const t = setTimeout(() => {
       fetch(`/api/search?q=${encodeURIComponent(q)}`)
         .then((r) => r.json())
-        .then((d) => setApiResults(d.results ?? []));
+        .then((d) => {
+          setApiResults(d.results ?? []);
+          setInterpreted(d.interpreted ?? null);
+          setRedirectHref(d.redirectHref ?? null);
+        });
     }, 200);
     return () => clearTimeout(t);
   }, [query]);
@@ -74,7 +84,12 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search DB releases, demo releases, apps, templates..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && redirectHref) {
+                navigate(redirectHref);
+              }
+            }}
+            placeholder='Try "blocked in FIN", "my releases", RD-2026…'
             className="flex-1 text-sm outline-none placeholder:text-slate-400"
           />
           <kbd className="hidden sm:inline text-xs text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">ESC</kbd>
@@ -82,11 +97,17 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
 
         <div className="max-h-80 overflow-y-auto">
           {query.trim() === "" ? (
-            <p className="p-4 text-sm text-slate-400">Search across database and demo data — try RD-2026, v2.14.0, SAP, booking...</p>
+            <p className="p-4 text-sm text-slate-400">
+              Natural language or keywords — try &ldquo;what&apos;s blocked in FIN&rdquo;, &ldquo;my releases&rdquo;, P1, booking…
+            </p>
           ) : merged.length === 0 ? (
             <p className="p-4 text-sm text-slate-500">No results for &ldquo;{query}&rdquo;</p>
           ) : (
-            merged.map((r) => {
+            <>
+              {interpreted && (
+                <p className="px-4 pt-3 pb-1 text-xs text-brand-600 font-medium">{interpreted}</p>
+              )}
+              {merged.map((r) => {
               const Icon = r.id.startsWith("tpl-") ? icons.template : icons[r.type];
               return (
                 <button
@@ -102,7 +123,8 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
                   </div>
                 </button>
               );
-            })
+            })}
+            </>
           )}
         </div>
       </div>

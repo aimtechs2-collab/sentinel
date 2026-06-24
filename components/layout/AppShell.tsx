@@ -6,6 +6,8 @@ import { AppHeader } from "./AppHeader";
 import { Backdrop } from "./Backdrop";
 import { ChatProvider } from "@/components/chat/ChatProvider";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { PageHelpBanner } from "@/components/help/PageHelpBanner";
+import { NewUserWelcomeModal } from "@/components/help/HelpCenterModal";
 import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { ReleaseStoreProvider } from "@/context/ReleaseStoreContext";
 import { ReleaseFiltersProvider } from "@/context/ReleaseFiltersContext";
@@ -23,8 +25,12 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         <Backdrop />
         <div className={cn("flex flex-1 flex-col transition-all duration-300 ease-in-out", margin)}>
           <AppHeader />
-          <main className="mx-auto w-full max-w-screen-2xl flex-1 p-4 md:p-6">{children}</main>
+          <main className="mx-auto w-full max-w-screen-2xl flex-1 p-4 md:p-6">
+            <PageHelpBanner />
+            {children}
+          </main>
           <ChatPanel />
+          <NewUserWelcomeModal />
         </div>
       </div>
     </ChatProvider>

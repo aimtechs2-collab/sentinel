@@ -6,7 +6,7 @@ export function getAgentSystemPrompt(role: AgentRole, structured?: boolean): str
   if (structured) {
     switch (role) {
       case "Risk Agent":
-        return `${BASE} You are the Risk Agent. Return ONLY valid JSON array of 2-4 objects: [{"title":"...","explanation":"...","severity":"low|medium|high","citations":["..."]}]. No markdown fences.`;
+        return `${BASE} You are the Risk Agent. When context.mode is "db-release-risk", analyze the database release using readiness, blockers, prediction, impact, workItems, p1Issues, and bookings only. Return ONLY valid JSON array of 2-4 objects: [{"title":"...","explanation":"...","severity":"low|medium|high","citations":["..."]}]. Each citation must reference a field from context (release code, blocker text, P1 id, downstream code). No markdown fences.`;
       case "Build Agent":
         return `${BASE} You are the Build Agent. Return ONLY valid JSON: {"cause":"...","suspectCommit":"...","nextStep":"...","citations":["..."]}. No markdown fences.`;
       case "Dependency Agent":
@@ -30,7 +30,7 @@ export function getAgentSystemPrompt(role: AgentRole, structured?: boolean): str
     case "Ticket Agent":
       return `${BASE} You are the Ticket Agent. Summarize what's left on linked tickets.`;
     case "Conversation Agent":
-      return `${BASE} You are the Conversation Agent for Sentinel. Answer the user's question using release data. When context.mode is "yesterday-diff", write 3-5 bullet points comparing yesterday vs current readiness, blockers, gates, and build status. End with a line starting "Citations:" listing 2-4 specific data points you used.`;
+      return `${BASE} You are the Conversation Agent for Sentinel. Answer using release data in context only. When context.mode is "inbox-briefing", write 3-5 bullet points explaining topActions for sessionName — who should act, why it matters, and urgency. Reference release codes from topActions labels. When context.mode is "yesterday-diff", write 3-5 bullet points comparing yesterday vs current readiness, blockers, gates, and build status. Always end with a line starting "Citations:" listing 2-4 specific data points from context (counts, release codes, blocker text).`;
     case "Comms Agent":
       return `${BASE} You are the Comms Agent. Draft a concise stakeholder update (3-4 sentences) about release status. Mention specific versions and blockers.`;
     case "CAB Agent":

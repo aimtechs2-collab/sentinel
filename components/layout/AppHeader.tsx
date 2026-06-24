@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useSidebar } from "@/context/SidebarContext";
-import { Bell, Menu, Search } from "lucide-react";
+import { Bell, CircleHelp, Menu, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { NotificationPanel } from "@/components/layout/NotificationPanel";
+import { HelpCenterModal } from "@/components/help/HelpCenterModal";
 import { useReleaseStore } from "@/context/ReleaseStoreContext";
 
 export function AppHeader() {
@@ -13,6 +14,7 @@ export function AppHeader() {
   const { unreadNotifications } = useReleaseStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -68,6 +70,15 @@ export function AppHeader() {
             </button>
 
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-brand-50 hover:text-brand-600"
+                aria-label="Help and navigation"
+                title="Help & navigation"
+              >
+                <CircleHelp className="h-5 w-5" />
+              </button>
               <div className="relative">
                 <button
                   type="button"
@@ -97,6 +108,7 @@ export function AppHeader() {
       </header>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <HelpCenterModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
   );
 }

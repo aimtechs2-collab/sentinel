@@ -5,9 +5,12 @@ import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { ReadinessGauge } from "@/components/gauges/ReadinessGauge";
 import { ReleaseLifecycleStrip } from "@/components/releases/ReleaseLifecycleStrip";
 import { DbBlockerList } from "@/components/releases/DbBlockerList";
+import { DbAIRiskPanel } from "@/components/releases/DbAIRiskPanel";
 import { DbLinkedWorkItems } from "@/components/releases/DbLinkedWorkItems";
+import { DbPredictiveNudge } from "@/components/releases/DbPredictiveNudge";
 import { AdvancedCard } from "@/components/ui/advanced-card";
 import type { DbBlocker, DbNextAction } from "@/lib/db-release-command";
+import type { DbReleasePrediction } from "@/lib/db-predictive";
 import type { LifecycleStageView } from "@/lib/types";
 import { ArrowRight, ListChecks } from "lucide-react";
 
@@ -16,6 +19,7 @@ type CommandCenterData = {
   blockers: DbBlocker[];
   stages: LifecycleStageView[];
   nextActions: DbNextAction[];
+  prediction?: DbReleasePrediction;
   p1Issues: { externalId: string; title: string; status: string; source: string; priority: string }[];
 };
 
@@ -32,10 +36,12 @@ export function DbReleaseCommandCenter({ releaseId }: { releaseId: string }) {
 
   return (
     <div className="space-y-6">
+      {data.prediction && <DbPredictiveNudge prediction={data.prediction} />}
       <ReleaseLifecycleStrip stages={data.stages} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <DbAIRiskPanel releaseId={releaseId} />
           <div id="blockers">
             <DbBlockerList blockers={data.blockers} />
           </div>

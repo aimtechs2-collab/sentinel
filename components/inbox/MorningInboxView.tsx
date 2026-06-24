@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { SourceBadgeInline } from "@/components/dashboard/UnifiedPortfolioPanel";
 import { TopBar } from "@/components/layout/TopBar";
 import { ReleaseFiltersBar } from "@/components/releases/ReleaseFiltersBar";
+import { TopActionsToday } from "@/components/inbox/TopActionsToday";
 import { MetricCard } from "@/components/ui/metric-card";
 import { DataTable, tableCell, tableHeadRow, tableRow } from "@/components/ui/data-table";
 import { filterLabel } from "@/lib/release-filters";
@@ -53,10 +55,14 @@ const SECTION_FILTERS: { id: InboxSection | "all"; label: string }[] = [
 ];
 
 export function MorningInboxView() {
+  const searchParams = useSearchParams();
   const [period, setPeriod] = useState<Period>("month");
   const [data, setData] = useState<InboxData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<InboxSection | "all">("all");
+  const initialSection = (searchParams.get("section") as InboxSection | "all") || "all";
+  const [section, setSection] = useState<InboxSection | "all">(
+    SECTION_FILTERS.some((s) => s.id === initialSection) ? initialSection : "all"
+  );
   const { filterQuery, filters, departments, applications, environments, hasRefinement } =
     useReleaseFilters();
 
@@ -111,6 +117,8 @@ export function MorningInboxView() {
       />
 
       <ReleaseFiltersBar />
+
+      <TopActionsToday filterQuery={filterQuery} />
 
       <div className="flex gap-1 rounded-xl border border-gray-200 bg-white/80 p-1 w-fit">
         {(["month", "quarter", "year"] as Period[]).map((p) => (
