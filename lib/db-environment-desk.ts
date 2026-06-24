@@ -6,6 +6,7 @@ import type {
   ReleaseSize,
   ReleaseTimelineEntry,
 } from "./types";
+import { hasVersionDrift } from "@/lib/environment-drift";
 
 type AppRow = {
   id: string;
@@ -90,7 +91,7 @@ export function buildVersionMatrix(apps: AppRow[], versions: VersionRow[], relea
     const dev = pick("dev");
     const test = pick("test");
     const prod = pick("prod");
-    const drift = dev !== prod || test !== prod;
+    const drift = hasVersionDrift(dev, test, prod);
     const promotionPct = prod === dev ? 100 : test === prod ? 66 : dev !== "—" ? 33 : 0;
     const linkedRelease = releases.find((r) =>
       r.department.name === app.department.name || app.name === "SAP"

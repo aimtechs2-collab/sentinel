@@ -1,5 +1,6 @@
 import { buildEnvironmentPromotions } from "./environment-promotions";
 import { connectors, freezeWindows, releases, services } from "./dummy-data";
+import { alignVersionsPostRemediation, hasVersionDrift } from "@/lib/environment-drift";
 import type {
   ApplicationConfig,
   ApplicationEnvConfig,
@@ -335,11 +336,11 @@ export function buildApplicationVersions(source: Release[] = releases): Applicat
 
   return Array.from(apps.entries()).map(([application, { team, release, services: svcIds }]) => {
     const promos = buildEnvironmentPromotions(release).filter((p) => p.region === "ap-southeast-2");
-    const dev = promos.find((p) => p.environment === "dev")?.version ?? release.version;
-    const test = promos.find((p) => p.environment === "staging")?.version ?? dev;
-    const prod = promos.find((p) => p.environment === "prod")?.version ?? test;
-    const drift = dev !== prod || test !== prod;
-    const promotionPct = prod === dev ? 100 : test === prod ? 66 : 33;
+    const devRaw = promos.find((p) => p.environment === "dev")?.version ?? release.version;
+    const testRaw = promos.find((p) => p.environment === "staging")?.version ?? devRaw;
+    const prodRaw = promos.find((p) => p.environment === "prod")?.version ?? testRaw;
+    const { dev, test, prod, promotionPct } = alignVersionsPostRemediation(devRaw, testRaw, prodRaw);
+    const drift = hasVersionDrift(dev, test, prod);
 
     return {
       application,

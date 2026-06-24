@@ -261,6 +261,7 @@ async function main() {
       { releaseId: rel2135.id, action: "decision", actor: "Alex Kim", detail: "No-Go — build #4468 failing integration tests" },
       { releaseId: rel2141.id, action: "decision", actor: "Nina Okonkwo", detail: "Go — all gates green for mobile patch" },
       { releaseId: rel2120.id, action: "status_change", actor: "Jordan Lee", detail: "Shipped to production — smoke tests passed" },
+      { releaseId: rel2140.id, action: "environment", actor: "Emma Walsh", detail: "Environment drift remediated — SAP DEV/TEST/PROD aligned to 2.14.0" },
     ],
   });
 
@@ -325,12 +326,12 @@ async function main() {
 
   await prisma.environmentVersion.createMany({
     data: [
-      { applicationId: sap.id, environmentId: sapDev.id, version: "2.15.0-dev", updatedBy: "Jordan Lee" },
+      { applicationId: sap.id, environmentId: sapDev.id, version: "2.14.0", updatedBy: "Jordan Lee" },
       { applicationId: sap.id, environmentId: sapTest.id, version: "2.14.0", updatedBy: "Jordan Lee" },
-      { applicationId: sap.id, environmentId: sapProd.id, version: "2.13.5", updatedBy: "Emma Walsh" },
+      { applicationId: sap.id, environmentId: sapProd.id, version: "2.14.0", updatedBy: "Emma Walsh" },
       { applicationId: finApp.id, environmentId: finUat.id, version: "2.14.0", updatedBy: "Guru Sharma" },
-      { applicationId: crmApp.id, environmentId: crmDev.id, version: "2.12.0-dev", updatedBy: "David Frost" },
-      { applicationId: oracle.id, environmentId: oracleDev.id, version: "1.8.0-dev", updatedBy: "Raj Patel" },
+      { applicationId: crmApp.id, environmentId: crmDev.id, version: "2.14.0", updatedBy: "David Frost" },
+      { applicationId: oracle.id, environmentId: oracleDev.id, version: "2.14.0", updatedBy: "Raj Patel" },
     ],
   });
 

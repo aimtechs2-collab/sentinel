@@ -89,7 +89,7 @@ export function EnvironmentDeskDashboardCard() {
         </Box>
       ) : (
         <Typography variant="body2" sx={{ pt: 2, borderTop: 1, borderColor: "divider", color: "success.main" }}>
-          All environment slots aligned — no drift or booking conflicts detected.
+          Environment drift remediated — all tiers aligned to production baselines. No booking conflicts detected.
         </Typography>
       )}
     </MaterioCard>
