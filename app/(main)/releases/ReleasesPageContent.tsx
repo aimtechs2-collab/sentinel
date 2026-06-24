@@ -97,8 +97,6 @@ export default function ReleasesPageContent() {
 
   const canEdit = user?.role === "editor" || user?.role === "admin";
 
-  const refresh = () => refreshLookups();
-
   const remove = async (id: string) => {
     if (!confirm("Delete this release?")) return;
     await fetch(`/api/releases/${id}`, { method: "DELETE" });

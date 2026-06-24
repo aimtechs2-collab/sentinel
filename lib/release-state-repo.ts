@@ -1,6 +1,5 @@
 import {
   computeLiveDeploymentState,
-  createInitialDeploymentState,
   createIncidentDeployState,
   startedAtForRollout,
 } from "./deployment-sim";

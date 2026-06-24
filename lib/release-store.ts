@@ -71,7 +71,7 @@ export function loadReleaseStore(): ReleaseStoreState {
 }
 
 /** @deprecated Live state persists in SQLite via API routes. */
-export function saveReleaseStore(_state: ReleaseStoreState) {
+export function saveReleaseStore() {
   // no-op — operational state is server-backed
 }
 
