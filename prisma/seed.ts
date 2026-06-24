@@ -18,6 +18,7 @@ async function main() {
   await prisma.envBooking.deleteMany();
   await prisma.systemMappingEdge.deleteMany();
   await prisma.p1Issue.deleteMany();
+  await prisma.workItem.deleteMany();
   await prisma.release.deleteMany();
   await prisma.environmentVersion.deleteMany();
   await prisma.environment.deleteMany();
@@ -358,6 +359,104 @@ async function main() {
         priority: "P1",
         status: "Open",
         source: "Datadog",
+      },
+    ],
+  });
+
+  await prisma.workItem.createMany({
+    data: [
+      {
+        externalId: "BILL-800",
+        title: "Platform release — core billing epic",
+        itemType: "Epic",
+        releaseCode: "RD-2026-0140",
+        status: "In Progress",
+        assignee: "Priya Sharma",
+        priority: "High",
+        source: "Jira",
+      },
+      {
+        externalId: "BILL-801",
+        title: "SAP payment routing regression suite",
+        itemType: "Story",
+        releaseCode: "RD-2026-0140",
+        status: "Done",
+        assignee: "Jordan Lee",
+        priority: "High",
+        source: "Jira",
+      },
+      {
+        externalId: "BILL-802",
+        title: "FIN UAT sign-off scenarios",
+        itemType: "Story",
+        releaseCode: "RD-2026-0140",
+        status: "In Progress",
+        assignee: "Guru Sharma",
+        priority: "Medium",
+        source: "Jira",
+      },
+      {
+        externalId: "BILL-803",
+        title: "CRM downstream validation blocked on env",
+        itemType: "Story",
+        releaseCode: "RD-2026-0140",
+        status: "Blocked",
+        assignee: "David Frost",
+        priority: "Medium",
+        blockedBy: "BILL-802",
+        source: "Jira",
+      },
+      {
+        externalId: "FIN-893",
+        title: "Hotfix — integration test failures on build #4468",
+        itemType: "Bug",
+        releaseCode: "RD-2026-0135",
+        status: "Blocked",
+        assignee: "Alex Kim",
+        priority: "High",
+        blockedBy: "FIN-890",
+        source: "Jira",
+      },
+      {
+        externalId: "FIN-890",
+        title: "Invoice rounding mismatch root cause",
+        itemType: "Bug",
+        releaseCode: "RD-2026-0135",
+        status: "In Progress",
+        assignee: "Chris Nguyen",
+        priority: "High",
+        source: "Jira",
+      },
+      {
+        externalId: "CRM-410",
+        title: "Search index rebuild for enhancement",
+        itemType: "Story",
+        releaseCode: "RD-2026-0150",
+        status: "In Progress",
+        assignee: "David Frost",
+        priority: "Medium",
+        source: "Jira",
+      },
+      {
+        externalId: "CRM-411",
+        title: "Platform dependency gate — wait for RD-2026-0140",
+        itemType: "Story",
+        releaseCode: "RD-2026-0150",
+        status: "Pending",
+        assignee: "Priya Sharma",
+        priority: "Medium",
+        blockedBy: "BILL-800",
+        source: "Jira",
+      },
+      {
+        externalId: "PAY-120",
+        title: "API hardening — security review stories",
+        itemType: "Epic",
+        releaseCode: "RD-2026-0160",
+        status: "Planned",
+        assignee: "Emma Walsh",
+        priority: "High",
+        source: "Jira",
       },
     ],
   });

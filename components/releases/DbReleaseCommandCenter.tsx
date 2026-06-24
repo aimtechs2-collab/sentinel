@@ -39,7 +39,7 @@ export function DbReleaseCommandCenter({ releaseId }: { releaseId: string }) {
           <div id="blockers">
             <DbBlockerList blockers={data.blockers} />
           </div>
-          <DbLinkedWorkItems items={data.p1Issues} />
+          <DbLinkedWorkItems releaseId={releaseId} />
         </div>
 
         <div className="space-y-6">

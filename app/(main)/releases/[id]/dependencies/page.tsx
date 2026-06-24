@@ -8,6 +8,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { AdvancedCard } from "@/components/ui/advanced-card";
 import { isSyntheticReleaseId } from "@/components/releases/SyntheticReleaseDetail";
 import { SyntheticDependenciesPage } from "@/components/releases/SyntheticDependenciesPage";
+import { DependencyImpactPanel } from "@/components/releases/DependencyImpactPanel";
 import { ArrowLeft, Network } from "lucide-react";
 
 type ReleaseDetail = {
@@ -116,6 +117,7 @@ function DbDependenciesPage({ id }: { id: string }) {
         <ArrowLeft className="h-4 w-4" /> Back to release
       </ProgressLink>
       <TopBar title="Dependency map" subtitle={`${release.releaseCode} — database-backed apps, release deps, and system mapping`} highlight />
+      <DependencyImpactPanel releaseId={id} />
       <AdvancedCard title="Release dependency graph" icon={Network} variant="glass" noPadding innerClassName="h-[520px]">
         <ReactFlow nodes={nodes} edges={flowEdges} fitView>
           <Background />

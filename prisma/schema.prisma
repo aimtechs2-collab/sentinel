@@ -179,6 +179,23 @@ model P1Issue {
   updatedAt   DateTime @updatedAt
 }
 
+model WorkItem {
+  id          String   @id @default(cuid())
+  externalId  String   @unique
+  title       String
+  itemType    String
+  releaseCode String?
+  status      String
+  assignee    String?
+  priority    String?
+  blockedBy   String?
+  source      String   @default("Jira")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([releaseCode])
+}
+
 model ReleaseDecisionState {
   id         String    @id @default(cuid())
   releaseId  String    @unique

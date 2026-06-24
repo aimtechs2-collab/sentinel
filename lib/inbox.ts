@@ -17,6 +17,10 @@ import type { ReleaseDecision } from "./types";
 import { isApprovalOverdue } from "./utils";
 import { ownerMatches } from "./user-match";
 
+function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
+  return aStart <= bEnd && bStart <= aEnd;
+}
+
 export function attentionToInboxItem(item: NeedsAttentionItem): InboxItem {
   return {
     id: `attention-${item.source}-${item.id}`,

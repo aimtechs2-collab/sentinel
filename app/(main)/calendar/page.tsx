@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays, GanttChart } from "lucide-react";
 import { ProgressLink } from "@/components/layout/NavigationProgress";
 import { TopBar } from "@/components/layout/TopBar";
@@ -22,6 +22,7 @@ import {
 } from "@/lib/unified-releases";
 import { inPeriod, periodRange, type Period } from "@/lib/period-range";
 import { cn, formatDate } from "@/lib/utils";
+import { capacityLevelClass, computeEnvCapacityByDay } from "@/lib/calendar-capacity";
 import { taBtnSecondary } from "@/lib/styles";
 
 type ViewMode = "calendar" | "timeline";
@@ -40,6 +41,14 @@ type DbRelease = {
   applications: { application: { id: string; name: string } }[];
 };
 
+type CalendarBooking = {
+  fromDate: string;
+  toDate: string;
+  status: string;
+  application: { name: string };
+  environment: { name: string } | null;
+};
+
 const STATUS_COLORS: Record<string, string> = {
   Planned: "bg-blue-100 text-blue-800",
   "In Progress": "bg-brand-100 text-brand-800",
@@ -55,6 +64,13 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [viewDate, setViewDate] = useState(() => new Date());
+  const [envBookings, setEnvBookings] = useState<CalendarBooking[]>([]);
+
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setEnvBookings);
+  }, []);
 
   const {
     filters,
@@ -108,6 +124,11 @@ export default function CalendarPage() {
     return map;
   }, [unified, month, year]);
 
+  const capacityByDay = useMemo(
+    () => computeEnvCapacityByDay(envBookings, year, month, daysInMonth),
+    [envBookings, year, month, daysInMonth]
+  );
+
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
   const today = new Date();
@@ -116,6 +137,8 @@ export default function CalendarPage() {
     [unified]
   );
   const timelineSpan = Math.max(periodEnd.getTime() - periodStart.getTime(), 1);
+
+  const highLoadDays = Object.values(capacityByDay).filter((c) => c.level === "high").length;
 
   return (
     <div className="space-y-6">
@@ -154,6 +177,9 @@ export default function CalendarPage() {
 
       <p className="text-xs text-gray-500">
         Showing {unified.length} release(s) · {formatDate(periodStart.toISOString())} – {formatDate(periodEnd.toISOString())}
+        {highLoadDays > 0 && (
+          <span className="text-warning-600"> · {highLoadDays} day(s) with high env load</span>
+        )}
       </p>
 
       {viewMode === "calendar" ? (
@@ -163,6 +189,11 @@ export default function CalendarPage() {
             <h2 className="font-semibold text-gray-800 flex items-center gap-2"><CalendarDays className="w-5 h-5 text-brand-500" />{monthName}</h2>
             <button type="button" onClick={nextMonth} className={taBtnSecondary + " !p-2"}><ChevronRight className="w-5 h-5 text-gray-600" /></button>
           </div>
+          <div className="flex flex-wrap gap-3 mb-3 text-[10px] text-gray-500">
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded ring-1 ring-brand-200" /> Env booked</span>
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded ring-2 ring-warning-300 bg-warning-50/30" /> Medium load</span>
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded ring-2 ring-error-400 bg-error-50/40" /> High load</span>
+          </div>
           <div className="grid grid-cols-7 gap-2">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
               <div key={d} className="text-center text-xs font-medium text-gray-500 py-2">{d}</div>
@@ -171,11 +202,24 @@ export default function CalendarPage() {
             {Array.from({ length: daysInMonth }).map((_, idx) => {
               const day = idx + 1;
               const dayReleases = releasesByDay[day] ?? [];
+              const capacity = capacityByDay[day];
               const cellDate = new Date(year, month, day);
               const isToday = cellDate.getDate() === today.getDate() && cellDate.getMonth() === today.getMonth() && cellDate.getFullYear() === today.getFullYear();
               return (
-                <div key={day} className={cn("min-h-[96px] border p-2 rounded-xl bg-white/80 border-gray-100", isToday && "ring-2 ring-brand-500/40")}>
-                  <span className={cn("text-xs font-medium", isToday ? "text-brand-600" : "text-gray-500")}>{day}</span>
+                <div
+                  key={day}
+                  className={cn(
+                    "min-h-[96px] border p-2 rounded-xl bg-white/80 border-gray-100",
+                    isToday && "ring-2 ring-brand-500/40",
+                    capacity && capacityLevelClass[capacity.level]
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={cn("text-xs font-medium", isToday ? "text-brand-600" : "text-gray-500")}>{day}</span>
+                    {capacity && capacity.bookingCount > 0 && (
+                      <span className="text-[9px] text-gray-400">{capacity.bookingCount} env</span>
+                    )}
+                  </div>
                   <div className="space-y-1 mt-1">
                     {dayReleases.map((r) => (
                       <ProgressLink key={`${r.source}-${r.id}`} href={r.href} className="block text-xs truncate hover:bg-brand-50 rounded px-1 py-0.5 -mx-1">
